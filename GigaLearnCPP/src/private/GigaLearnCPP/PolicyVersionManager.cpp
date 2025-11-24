@@ -8,6 +8,11 @@
 
 #include <private/GigaLearnCPP/PPO/PPOLearner.h>
 
+#include <filesystem>
+#include <cstdint>
+#include <set>
+#include <cassert>
+
 using namespace nlohmann;
 
 GGL::PolicyVersionManager::PolicyVersionManager(
@@ -178,8 +183,12 @@ void GGL::PolicyVersionManager::RunSkillMatches(PPOLearner* ppo, Report& report)
 		newTeam = skill.prevNewTeam;
 		totalSimTime = skill.prevSimTime;
 	} else {
-		oldVersionIndex = Math::RandInt(0, versions.size());
-		newTeam = (Team)Math::RandInt(0, 2);
+		if (versions.empty()) {
+			// If no versions available, skip skill match
+			return;
+		}
+		oldVersionIndex = RocketSim::Math::RandInt(0, (int)versions.size());
+		newTeam = (Team)RocketSim::Math::RandInt(0, 2);
 		totalSimTime = 0;
 
 		skill.envSet->Reset();

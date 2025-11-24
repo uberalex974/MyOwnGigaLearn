@@ -605,7 +605,6 @@ Arena* Arena::DeserializeNew(DataStreamIn& in) {
 	float tickTime;
 	uint64_t tickCount;
 	uint32_t lastCarID;
-	ArenaMemWeightMode memWeightMode;
 
 	in.ReadMultiple(gameMode, tickTime, tickCount, lastCarID);
 

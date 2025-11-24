@@ -1,0 +1,8 @@
+# Deployment checkpoints directory
+# Separate from training checkpoints to avoid conflicts
+# Checkpoints will be organized in timestep-numbered subfolders:
+# C:/Giga/GigaLearnCPP/checkpoints_deploy/
+# ├── 10000/
+# ├── 20000/
+# ├── 30000/
+# └── ...

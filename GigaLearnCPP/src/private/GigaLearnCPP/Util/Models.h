@@ -156,7 +156,7 @@ namespace GGL {
 		virtual ~Model() = default;
 	};
 
-	class ModelSet {
+	struct ModelSet {
 	public:
 		std::map<std::string, Model*> map = {};
 

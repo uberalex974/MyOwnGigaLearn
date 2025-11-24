@@ -1,5 +1,7 @@
 #pragma once
 #include <RLGymCPP/BasicTypes/Lists.h>
+#include <filesystem>
+#include <string>
 #include "PPO/PPOLearnerConfig.h"
 #include "SkillTrackerConfig.h"
 
@@ -28,7 +30,8 @@ namespace GGL {
 		// Checkpoints are saved here as timestep-numbered subfolders
 		//	e.g. a checkpoint at 20,000 steps will save to a subfolder called "20000"
 		// Set empty to disable saving
-		std::filesystem::path checkpointFolder = "checkpoints"; 
+		// DEFAULT: Saves to C:\Giga\GigaLearnCPP\checkpoints (preserved across rebuilds)
+		std::filesystem::path checkpointFolder = "C:/Giga/GigaLearnCPP/checkpoints"; 
 
 		// Save every timestep
 		// Set to zero to just use timestepsPerIteration

@@ -1,13 +1,21 @@
 #pragma once
 
-#include "Util/Models.h"
+#include <GigaLearnCPP/Util/Models.h>
 #include <GigaLearnCPP/SkillTrackerConfig.h>
 #include <GigaLearnCPP/Util/Report.h>
 #include <GigaLearnCPP/Util/RenderSender.h>
 
 #include <nlohmann/json.hpp>
+#include <filesystem>
+#include <cstdint>
+#include <map>
+#include <vector>
+#include <string>
 
 namespace GGL {
+
+	// Forward declaration inside namespace
+	struct PPOLearner;
 
 	struct SkillRating {
 		std::map<std::string, float> data;
@@ -53,7 +61,7 @@ namespace GGL {
 
 	struct PolicyVersion {
 		uint64_t timesteps;
-		ModelSet models;
+		GGL::ModelSet models;
 		SkillRating ratings;
 	};
 
@@ -89,16 +97,16 @@ namespace GGL {
 			RenderSender* renderSender = NULL);
 
 		// NOTE: Passed models should not be already cloned
-		PolicyVersion& AddVersion(ModelSet modelsToClone, uint64_t timesteps);
+		PolicyVersion& AddVersion(GGL::ModelSet modelsToClone, uint64_t timesteps);
 
 		void SaveVersions();
-		void LoadVersions(ModelSet modelsTemplate, uint64_t curTimesteps);
+		void LoadVersions(GGL::ModelSet modelsTemplate, uint64_t curTimesteps);
 
 		void SortVersions();
 
-		void RunSkillMatches(struct PPOLearner* ppo, Report& report);
+		void RunSkillMatches(struct PPOLearner* ppo, GGL::Report& report);
 
-		void OnIteration(struct PPOLearner* ppo, Report& report, int64_t totalTimesteps, int64_t prevTotalTimesteps);
+		void OnIteration(struct PPOLearner* ppo, GGL::Report& report, int64_t totalTimesteps, int64_t prevTotalTimesteps);
 
 		void AddRunningStatsToJSON(nlohmann::json& json);
 		void LoadRunningStatsFromJSON(const nlohmann::json& json);
