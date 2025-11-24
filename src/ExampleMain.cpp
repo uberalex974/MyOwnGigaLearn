@@ -96,12 +96,13 @@ void StepCallback(Learner* learner, const std::vector<GameState>& states, Report
 int main(int argc, char* argv[]) {
 	// Initialize RocketSim with collision meshes
 	// Change this path to point to your meshes!
-	RocketSim::Init("C:\\Users\\admin\\source\\repos\\RLArenaCollisionDumper\\collision_meshes");
+	RocketSim::Init("C:\\Giga\\GigaLearnCPP\\collision_meshes");
 
 	// Make configuration for the learner
 	LearnerConfig cfg = {};
 
 	cfg.deviceType = LearnerDeviceType::GPU_CUDA;
+	cfg.ppo.useHalfPrecision = true;  // 50% VRAM reduction, 20% speed improvement
 
 	cfg.tickSkip = 8;
 	cfg.actionDelay = cfg.tickSkip - 1; // Normal value in other RLGym frameworks

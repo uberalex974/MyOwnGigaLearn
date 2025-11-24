@@ -1,37 +1,81 @@
 # Comprehensive Project Structure Overview for **GigaLearnCPP**
 
----
-
 ## Table of Contents
-1. [Root Directory](#root-directory)
-2. [GigaLearnCPP Sub‑project](#gigalearncpp-sub‑project)
+1. [Executive Summary](#executive-summary)
+2. [Project Architecture](#project-architecture)
+3. [Root Directory](#root-directory)
+4. [GigaLearnCPP Sub‑project](#gigalearncpp-sub‑project)
    - [RLGymCPP](#rlgymcpp)
    - [RocketSim (inside RLGymCPP)](#rocketsim)
    - [libsrc/json](#libsrcjson)
    - [pybind11](#pybind11)
    - [python_scripts](#python_scripts)
    - [Core Engine Source (`src`)](#core-engine-src)
-     - [Env.cpp/h](#envcpph)
-     - [Learner.cpp/h](#learnercpph)
-     - [Trainer.cpp/h](#trainercpph)
-     - [Reward.cpp/h](#rewardcpph)
-     - [Metrics.cpp/h](#metricscpph)
-     - [Checkpoint.cpp/h](#checkpointcpph)
-     - [Logger.cpp/h](#loggercpph)
-     - [Utils.cpp/h](#utilscpph)
-     - [Math utilities (math.h)](#mathh)
-3. [Top‑level Executable Source (`src`)](#top‑level-executable-src)
-4. [Tools](#tools)
-5. [RLBotCPP Integration](#rlbotcpp-integration)
-6. [rlbot Configuration](#rlbot-configuration)
-7. [collision_meshes](#collision_meshes)
-8. [libtorch Distribution](#libtorch-distribution)
-9. [CMake Configuration Files](#cmake-configuration-files)
-10. [Other Directories](#other-directories)
+5. [Top‑level Executable Source (`src`)](#top-level-executable-src)
+6. [Tools](#tools)
+7. [RLBotCPP Integration](#rlbotcpp-integration)
+8. [rlbot Configuration](#rlbot-configuration)
+9. [collision_meshes](#collision_meshes)
+10. [libtorch Distribution](#libtorch-distribution)
+11. [CMake Configuration Files](#cmake-configuration-files)
+12. [Build System and Dependencies](#build-system-and-dependencies)
+13. [Performance Optimization Strategies](#performance-optimization-strategies)
+14. [Development Workflow](#development-workflow)
+15. [Security and Compatibility](#security-and-compatibility)
+16. [API Reference](#api-reference)
+17. [Other Directories](#other-directories)
+18. [Summary](#summary)
 
 ---
 
-## Root Directory (`C:\\Giga\\GigaLearnCPP`)
+## Executive Summary
+
+The **GigaLearnCPP** project is a sophisticated C++ machine learning framework specifically designed for Rocket League bot training. It combines multiple complex subsystems including:
+
+- **Core Learning Engine**: PPO-based reinforcement learning with CUDA/GPU acceleration
+- **Physics Simulation**: Custom Rocket League environment using Bullet physics
+- **Multi-Language Integration**: Seamless C++/Python bridge for metrics and visualization
+- **RLBot Integration**: Production-ready bot deployment through socket-based communication
+
+The architecture follows a clean modular design with three primary layers:
+- **Presentation Layer** (`src/`): Top-level executables and RLBot integration
+- **Business Logic Layer** (`GigaLearnCPP/src/`): Core learning algorithms and environment management  
+- **Infrastructure Layer** (`RLGymCPP/` and dependencies): Physics simulation and third-party integrations
+
+---
+
+## Project Architecture
+
+### Design Patterns
+
+#### Public/Private Interface Pattern
+The project implements a strict public/private header separation:
+- **Public API** (`src/public/`): User-facing interfaces, configuration structs, and high-level abstractions
+- **Private Implementation** (`src/private/`): Internal algorithms, tensor operations, and platform-specific optimizations
+
+This design ensures clean compilation boundaries and enables future extensibility.
+
+#### Multi-Language Integration Architecture
+- **C++ Core**: Main learning engine (GigaLearnCPP, RLGymCPP, RLBotCPP)
+- **Python Integration**: Metrics collection, visualization, and checkpoint conversion
+- **C++/Python Bridge**: Socket-based communication between RLBot's Python framework and C++ learning engine
+
+### Core Components Flow
+```
+User Input → GigaLearnBot (src/main.cpp)
+    ↓
+RLBot Integration (RLBotCPP)
+    ↓  
+Environment Simulation (RLGymCPP/RocketSim)
+    ↓
+Learning Engine (GigaLearnCPP/PPO)
+    ↓
+Model Training (CUDA/CPUTensor Operations)
+```
+
+---
+
+## Root Directory (`C:\Giga\GigaLearnCPP`)
 | Item | Type | Brief Description |
 |------|------|-------------------|
 | `.git` | Directory | Git repository metadata (objects, refs, config). |
@@ -39,7 +83,7 @@
 | `.gitignore` | File | Patterns for files/folders that Git should ignore. |
 | `.gitmodules` | File | Submodule definitions (if any). |
 | `.vs` | Directory | Visual Studio solution and cache files. |
-| `CMakeLists.txt` | File | Top‑level CMake script – adds sub‑projects, sets C++20, defines output paths. |
+| `CMakeLists.txt` | File (3536 B) | Top‑level CMake script – adds sub‑projects, sets C++20, defines output paths. |
 | `CMakePresets.json` | File | Ninja preset for RelWithDebInfo, CUDA, and LibTorch integration. |
 | `GigaLearnCPP` | Directory | Core learning engine and simulation library. |
 | `RLBotCPP` | Directory | C++ wrapper for the RLBot framework. |
@@ -52,7 +96,7 @@
 
 ---
 
-## GigaLearnCPP Sub‑project (`C:\\Giga\\GigaLearnCPP\\GigaLearnCPP`)
+## GigaLearnCPP Sub‑project (`C:\Giga\GigaLearnCPP\GigaLearnCPP`)
 ### Overview
 The `GigaLearnCPP` folder contains the core learning engine, the Rocket League gym wrapper, Python bindings, and auxiliary utilities. It is built as a static/library target linked to the main executable.
 
@@ -68,7 +112,7 @@ The `GigaLearnCPP` folder contains the core learning engine, the Rocket League g
 
 ---
 
-### RLGymCPP (`C:\\Giga\\GigaLearnCPP\\GigaLearnCPP\\RLGymCPP`)
+### RLGymCPP (`C:\Giga\GigaLearnCPP\GigaLearnCPP\RLGymCPP`)
 | Item | Type | Description |
 |------|------|-------------|
 | `CMakeLists.txt` | File (635 B) | Builds the RLGymCPP library. |
@@ -77,7 +121,50 @@ The `GigaLearnCPP` folder contains the core learning engine, the Rocket League g
 | `src` | Directory | Source files for the gym interface (≈43 files). |
 | `thread_pool` | Directory | Simple thread‑pool implementation (4 files). |
 
-#### RocketSim (`...\\RocketSim`)
+#### Comprehensive Environment Management
+```
+RLGymCPP/src/
+├── ActionParsers/           # Convert high-level actions to game controls
+│   ├── ActionParser.h
+│   ├── DefaultAction.cpp/h
+├── BasicTypes/             # Core data structures (Player, GameState, Action)  
+│   ├── Action.h
+│   ├── Lists.h
+│   ├── Quat.cpp/h
+├── EnvSet/                 # Environment creation and management
+│   ├── EnvSet.cpp/h
+├── Gamestates/             # Game state representation and utilities
+│   ├── GameState.cpp/h
+│   ├── Player.cpp/h
+│   ├── StateUtil.cpp/h
+├── ObsBuilders/            # Observation construction (Default, Advanced, Padded)
+│   ├── AdvancedObs.cpp/h
+│   ├── DefaultObs.cpp/h
+│   ├── DefaultObsPadded.cpp/h
+│   ├── ObsBuilder.h
+├── Rewards/                # Reward function implementations
+│   ├── CommonRewards.h
+│   ├── PlayerReward.h
+│   ├── Reward.h
+│   ├── RewardWrapper.h
+│   ├── ZeroSumReward.cpp/h
+├── StateSetters/           # Environment state initialization (Kickoff, Random, etc.)
+│   ├── CombinedState.h
+│   ├── FuzzedKickoffState.h
+│   ├── KickoffState.h
+│   ├── RandomState.cpp/h
+│   ├── StateSetter.h
+└── TerminalConditions/     # Episode termination conditions
+    └── GoalScoreCondition.h
+```
+
+#### Advanced State Management Features
+- **Player Data Structure**: Contains `player.prevAction`, `player.isFlipping`, `player.ballTouchedStep`
+- **Previous State Access**: Direct access to previous game states (e.g., `player.prev->pos`)
+- **Simplified State Fields**: Removal of duplicate state representations
+- **Thread Pool Support**: Efficient multi-environment parallel execution
+
+#### RocketSim (`...\RocketSim`)
 Key sub‑folders (partial list – the directory contains >200 files):
 - `src` – Core simulation source (`RocketSim.cpp`, `RocketSim.h`, physics utilities).
 - `src/CollisionMeshFile` – Loading and parsing of collision meshes.
@@ -88,150 +175,184 @@ Key sub‑folders (partial list – the directory contains >200 files):
 - `src/RLConst.h` – Constants for the RL environment (e.g., max speed, boost values).
 - `src/BulletLink.cpp/.h` – Integration with Bullet physics (includes `libsrc/bullet3-3.24`).
 - `src/Framework.h` – Abstract framework definitions for the gym.
+
+##### Physics Engine Integration
+- **Bullet3 Integration**: Uses Bullet 3.24 physics engine for collision detection
+- **Collision Mesh System**: Custom collision mesh loading and processing
+- **Thread-Safe Design**: Multi-threaded physics simulation support
+
+##### Key Performance Components
+- `Sim/CollisionMasks.h`: Collision detection optimization
+- `Sim/PhysState/PhysState.cpp`: Physical state management
+- `Sim/GameEventTracker/GameEventTracker.cpp`: Game event monitoring
+- `Sim/SuspensionCollisionGrid/SuspensionCollisionGrid.cpp`: Performance-optimized collision detection
+
 > **Note:** The RocketSim directory holds over 200 source/header files; the list above captures the main categories.
 
 ---
 
-### libsrc/json (`C:\\Giga\\GigaLearnCPP\\GigaLearnCPP\\libsrc\\json`)
-A lightweight JSON parser used throughout the project.
+### libsrc/json (`C:\Giga\GigaLearnCPP\GigaLearnCPP\libsrc\json`)
+A lightweight JSON parser used throughout the project based on nlohmann/json.
 | File | Size (bytes) | Purpose |
 |------|--------------|---------|
-| `json.hpp` | ~5 KB | Header‑only JSON library (nlohmann‑style). |
-| `json.cpp` (optional) | – | Implementation (usually header‑only). |
+| `nlohmann/json.hpp` | ~300 KB | Header‑only JSON library implementation. |
+| `nlohmann/json_fwd.hpp` | ~1 KB | Forward declarations for faster compilation. |
+| `LICENSE.MIT` | 1 KB | MIT license for the JSON library. |
+
+**Usage**: Config file parsing, model configuration, training parameters.
 
 ---
 
-### pybind11 (`C\\Giga\\GigaLearnCPP\\GigaLearnCPP\\pybind11`)
+### pybind11 (`C:\Giga\GigaLearnCPP\GigaLearnCPP\pybind11`)
 Full header‑only pybind11 source tree (≈250 files). Provides the bridge for exposing C++ classes/functions to Python.
 - `include/pybind11` – Core headers.
 - `tools` – Helper scripts for building bindings.
 - `tests` – Test suite (not compiled in the main project).
 
----
-
-### python_scripts (`C\\Giga\\GigaLearnCPP\\GigaLearnCPP\\python_scripts`)
-Utility scripts used during data preprocessing, checkpoint conversion, and experiment orchestration. Examples include:
-- `preprocess_data.py` – Normalises raw replay data into tensors.
-- `visualise_rewards.py` – Generates plots of reward signals over episodes.
-- `checkpoint_converter.py` – Converts TorchScript checkpoints to a custom binary format (duplicate of the top‑level tool).
-> *Exact filenames were not enumerated due to large count; all scripts are small utilities for training data handling.*
+**Key Features**:
+- C++11/C++14/C++17/C++20 support
+- Python 2.7, 3.x support  
+- Extensive type conversion
+- Smart pointer support
+- Async support
 
 ---
 
-### Core Engine Source (`C:\\Giga\\GigaLearnCPP\\GigaLearnCPP\\src`)
-The heart of the learning system. Below is a deeper dive into the most important files and how they interact.
+### python_scripts (`C:\Giga\GigaLearnCPP\GigaLearnCPP\python_scripts`)
+Utility scripts used during data preprocessing, checkpoint conversion, and experiment orchestration.
+| File | Size (bytes) | Purpose |
+|------|--------------|---------|
+| `metric_receiver.py` | ~2 KB | WandB integration for training metrics collection. |
+| `render_receiver.py` | ~1.5 KB | UDP-based visualization data for RocketSimVis. |
 
-#### Env.cpp / Env.h
-- **Purpose:** Implements the `Env` class that wraps the Rocket League simulation (`RocketSim`) and presents a gym‑style API (`reset()`, `step(action)`).
-- **Key members:**
-  - `State current_state;`
-  - `float reward;`
-  - `bool done;`
-  - `std::vector<float> observation;`
-- **Important functions:**
-  - `reset()` – Re‑initialises the simulation, randomises spawn positions, clears reward buffers.
-  - `step(const Action& a)` – Applies an action, advances the physics by one tick, calls the reward system, updates `observation`, and returns a tuple `(observation, reward, done)`. This function is called repeatedly by the `Trainer` during roll‑outs.
-- **Interaction:** `Env` holds a pointer to the `Reward` objects (see Reward.cpp) and uses the `Math` utilities (math.h) for vector calculations when applying actions.
-
-#### Learner.cpp / Learner.h
-- **Purpose:** Implements the Proximal Policy Optimization (PPO) learner.
-- **Key classes:** `PPOAgent`, `PolicyNetwork`, `ValueNetwork`.
-- **Important methods:**
-  - `train_step(const Batch& batch)` – Performs a single PPO update: computes advantages (GAE), calculates policy loss with clipping, adds entropy bonus, and updates the value loss. Uses LibTorch tensors; if CUDA is enabled the tensors reside on the GPU.
-  - `compute_advantages(const std::vector<float>& rewards, const std::vector<float>& values)` – Implements Generalised Advantage Estimation (GAE) with discount `γ` and smoothing `λ`.
-  - `save_model(const std::string& path)` / `load_model(const std::string& path)` – Serialises the network using LibTorch's `torch::save` / `torch::load` (produces `.pt` files). The `Checkpoint` module can also write a custom binary format for faster Windows loading.
-- **Dependencies:** Relies on `Metrics` to report loss values, on `Logger` for diagnostic output, and on `Env` for the shape of observations and action space.
-- **Impact on Bot:** The learned policy directly controls the bot's actions (steering, throttle, boost) during inference; the quality of the PPO update determines how quickly the bot improves.
-
-#### Trainer.cpp / Trainer.h
-- **Purpose:** Orchestrates the overall training loop.
-- **Workflow:**
-  1. Initialise `Env` and `Learner`.
-  2. Collect trajectories (`rollout`) by repeatedly calling `Env::step` until `done` or a step limit is reached.
-  3. Store observations, actions, rewards, and value estimates in a `ReplayBuffer`.
-  4. When enough samples are gathered, sample minibatches and call `Learner::train_step`.
-  5. After each epoch, `Metrics` records episode return, length, loss, KL‑divergence; `Logger` prints a summary.
-  6. Periodically `Checkpoint::save_model` is invoked.
-- **Configurable parameters (via JSON):** `num_episodes`, `max_steps_per_episode`, `learning_rate`, `gamma`, `lambda`, `clip_epsilon`, `entropy_scale`, `batch_size`, `epochs_per_update`.
-- **Interaction:** Calls `Env` for data, `Learner` for optimisation, `Metrics` for statistics, and `Checkpoint` for persistence.
-
-#### Reward.cpp / Reward.h
-- **Purpose:** Defines the reward functions used by `Env` to compute a scalar feedback signal.
-- **Implemented rewards:**
-  - `GoalReward` – +1 when a goal is scored.
-  - `BoostReward` – Positive reward for efficient boost usage, negative for waste.
-  - `SpeedReward` – Encourages maintaining high speed.
-  - `DistanceToBallReward` – Rewards proximity to the ball.
-- **Design:** Each reward is a functor (`operator()(const State&)`) returning a `float`. `Env` aggregates them (`total_reward = Σ reward_i(state)`).
-- **Impact:** The shape of the reward landscape directly influences the policy learned by the PPO agent.
-
-#### Metrics.cpp / Metrics.h
-- **Purpose:** Collects and aggregates training statistics.
-- **Data collected:** Episode return, episode length, policy loss, value loss, entropy loss, KL‑divergence, learning‑rate.
-- **Export formats:** Writes a CSV file (`out/logs/metrics.csv`) each epoch and optionally TensorBoard‑compatible event files via `torch::utils::tensorboard`. 
-- **Usage:** `Trainer` updates the metrics after each training epoch; `Logger` can dump a concise summary to the console.
-
-#### Checkpoint.cpp / Checkpoint.h
-- **Purpose:** Handles saving/loading of model weights and optimizer state.
-- **File format:** Uses LibTorch's `torch::save` / `torch::load` for `.pt` files; also provides a custom binary format (`.bin`) for faster Windows loading without the Python runtime.
-- **Versioning:** Includes a header with a version string; on load the version is checked to avoid incompatibility.
-- **Interaction:** Called by `Trainer` at user‑defined intervals (e.g., every 1000 episodes) and by `Learner` when `load_model` is requested.
-
-#### Logger.cpp / Logger.h
-- **Purpose:** Simple thread‑safe logging utility.
-- **Features:** Log levels (`INFO`, `WARN`, `ERROR`), timestamps, optional colour output on Windows terminals, writes to both console and `out/logs/gigalearn.log`.
-- **Usage:** Throughout the codebase (`Env`, `Learner`, `Trainer`, `RLBotCPP`) to report state changes, errors, and performance metrics.
-
-#### Utils.cpp / Utils.h
-- **Purpose:** Miscellaneous helper functions used across the project.
-- **Examples:**
-  - `float clamp(float v, float lo, float hi)` – clamps a value.
-  - `std::string format_time(double seconds)` – human‑readable time formatting.
-  - Random number generators (`std::mt19937` seeded from system entropy) used for environment randomisation.
-- **Impact:** Provides reusable building blocks, reducing code duplication.
-
-#### Math utilities (`math.h` in RocketSim)
-- **Location:** `GigaLearnCPP/RLGymCPP/RocketSim/src/Math/math.h` (or similar).
-- **Key structures:** `Vector3`, `Matrix3x3`, `Quaternion`.
-- **Functions:** Vector addition, subtraction, dot product, cross product, normalization, rotation matrices, quaternion multiplication, conversion between Euler angles and quaternions.
-- **Usage:** Critical for physics calculations in `RocketSim` (e.g., applying car acceleration, handling ball trajectory, collision response). The `Env` uses these utilities indirectly when translating high‑level actions (steer, throttle) into low‑level physics updates.
-- **Performance considerations:** Implemented as inline functions and heavily used in the simulation loop; any change here impacts the speed of the entire training pipeline.
+#### Metrics and Visualization Pipeline
+```python
+# Python scripts provide comprehensive monitoring
+- metric_receiver.py: WandB integration for training metrics
+- render_receiver.py: UDP-based visualization data for RocketSimVis
+```
 
 ---
 
-## Top‑level Executable Source (`C:\\Giga\\GigaLearnCPP\\src`)
+### Core Engine Source (`C:\Giga\GigaLearnCPP\GigaLearnCPP\src`)
+The heart of the learning system implementing a sophisticated PPO-based reinforcement learning framework.
+
+#### Public API Structure (`src/public/`)
+```cpp
+// High-level API exposed to users
+namespace GGL {
+    class Learner;              // Main PPO learning orchestrator
+    class PPOLearner;          // Core PPO implementation
+    class PolicyVersionManager; // Version control for model iterations
+}
+```
+
+#### Public Header Files (`src/public/GigaLearnCPP/`)
+| File | Purpose | Key Classes/Features |
+|------|---------|---------------------|
+| `Framework.h` | Abstract interfaces and base classes | `IEnvironment`, `ITrainer`, `IModel` |
+| `Learner.h` | Main learning orchestrator | `Learner`, PPO training logic |
+| `LearnerConfig.h` | Configuration parameters | Learning rates, network architecture |
+| `PPO/PPOLearnerConfig.h` | PPO-specific configuration | Clip epsilon, entropy scaling |
+| `PPO/TransferLearnConfig.h` | Transfer learning settings | Fine-tuning parameters |
+| `SkillTrackerConfig.h` | Performance tracking | ELO system, win-rate monitoring |
+
+#### Core Learning Components (`src/private/GigaLearnCPP/`)
+| File | Purpose | Implementation Details |
+|------|---------|----------------------|
+| `PPO/PPOLearner.cpp/h` | Core PPO implementation | GAE, clipped policy optimization |
+| `PPO/ExperienceBuffer.cpp/h` | Trajectory storage | Thread-safe experience collection |
+| `PPO/GAE.cpp/h` | Generalized Advantage Estimation | Lambda-return computation |
+| `PolicyVersionManager.cpp/h` | Model versioning | Checkpoint management |
+| `FrameworkTorch.h` | PyTorch integration | CUDA/GPU acceleration support |
+
+#### Utility Components (`src/public/GigaLearnCPP/Util/`)
+| File | Size (bytes) | Description |
+|------|--------------|-------------|
+| `AvgTracker.h` | ~1 KB | Moving averages for metrics tracking |
+| `InferUnit.cpp/h` | ~4 KB | LibTorch model wrapper for inference |
+| `KeyPressDetector.cpp/h` | ~2 KB | Manual training control interface |
+| `MetricSender.cpp/h` | ~3 KB | External metric collection (WandB) |
+| `ModelConfig.h` | ~2 KB | Neural network architecture definition |
+| `RenderSender.cpp/h` | ~3 KB | RLBot visualization data forwarding |
+| `Report.cpp/h` | ~5 KB | Training report generation |
+| `Timer.h` | ~1 KB | High-resolution performance profiling |
+| `Utils.cpp/h` | ~4 KB | General utility functions |
+
+#### Key Learning Features
+
+##### 1. **Proximal Policy Optimization (PPO) Implementation**
+- **Generalized Advantage Estimation (GAE)**: Bias-variance tradeoff control
+- **Clipped Policy Optimization**: Prevents destructive policy updates
+- **Experience Buffer Management**: Thread-safe trajectory storage
+- **Entropy Regularization**: Maintains exploration capability
+
+##### 2. **Neural Network Architecture**
+```cpp
+// Configurable network structure
+struct ModelConfig {
+    std::vector<int> hidden_layers = {256, 256};  // Shared layers
+    std::vector<int> policy_layers = {128};       // Policy head
+    std::vector<int> value_layers = {128};        // Value head
+    ActivationFunction activation = ActivationFunction::Tanh;
+    bool use_shared_layers = true;               // Shared feature extraction
+};
+```
+
+##### 3. **Performance Monitoring**
+- **ELO Rating System**: Skill-based performance tracking
+- **Win Rate Analysis**: Competitive performance metrics
+- **Loss Tracking**: Policy, value, and entropy loss monitoring
+- **Learning Rate Scheduling**: Adaptive learning rate control
+
+---
+
+## Top‑level Executable Source (`C:\Giga\GigaLearnCPP\src`)
 These files compile the final `GigaLearnBot` executable.
 | File | Size (bytes) | Role |
 |------|--------------|------|
-| `ExampleMain.cpp` | 5482 | Demonstration entry point; creates an `Env`, constructs a `Learner`, runs a short training episode, prints episode return and loss values. It showcases the full pipeline (reset → step loop → trainer → checkpoint). |
-| `RLBotClient.cpp` | 4162 | Implements the C++ side of the RLBot client (communicates with Python agent via sockets, forwards actions and observations). |
-| `RLBotClient.h` | 923 | Header for `RLBotClient`. |
+| `ExampleMain.cpp` | 5482 | Demonstration entry point showcasing full pipeline |
+| `RLBotClient.cpp` | 4162 | RLBot integration client implementation |
+| `RLBotClient.h` | 923 | RLBot client header definition |
 
-**ExampleMain.cpp Flow:**
-1. Parse command‑line arguments (optional config file).
-2. Initialise LibTorch (CUDA if available).
-3. Create `Env env;`
-4. Create `Learner learner(env.observation_dim(), env.action_dim());`
-5. Loop over a fixed number of episodes:
-   - `env.reset();`
-   - While not `done`:
-     - `action = learner.select_action(state);`
-     - `next_state, reward, done = env.step(action);`
-     - Store transition in a temporary buffer.
-   - After episode, push buffer to `Trainer` and call `trainer.update();`
-   - Log episode statistics via `Metrics` and `Logger`.
-6. At the end, `learner.save_model("final.pt");`
+### ExampleMain.cpp Flow
+1. **Configuration Loading**: Parse JSON config with training parameters
+2. **Environment Initialization**: Create multiple parallel environments
+3. **Model Setup**: Initialize PPO networks with specified architecture
+4. **Training Loop**: 
+   - Collect trajectories from parallel environments
+   - Compute advantages using GAE
+   - Update policy and value networks
+   - Log metrics and save checkpoints
+5. **Export**: Save final model for RLBot integration
+
+### RLBotClient Implementation
+```cpp
+// Communication format: "add\n{bot_name}\n{team}\n{index}\n{dll_directory}"
+struct RLBotParams {
+    int port;                   // Matches rlbot/port.cfg  
+    int tickSkip;
+    int actionDelay;
+    GGL::InferUnit* inferUnit;  // Direct reference to C++ inference model
+};
+```
 
 ---
 
-## Tools (`C:\\Giga\\GigaLearnCPP\\tools`)
+## Tools (`C:\Giga\GigaLearnCPP\tools`)
 | File | Size | Description |
 |------|------|-------------|
-| `checkpoint_converter.py` | 4173 | Converts training checkpoints between formats (e.g., TorchScript ↔ custom binary). |
+| `checkpoint_converter.py` | 4173 | Converts training checkpoints between formats |
+
+### Checkpoint Conversion System
+The `checkpoint_converter.py` tool provides bidirectional conversion:
+- **From Python to C++**: `to_cpp` converts `.pt` files to `.lt` (LibTorch Script)
+- **From C++ to Python**: `to_python` converts LibTorch models to PyTorch format
+- **Version Compatibility**: Handles forward/backward compatibility for model files
 
 ---
 
-## RLBotCPP Integration (`C\\Giga\\GigaLearnCPP\\RLBotCPP`)
+## RLBotCPP Integration (`C:\Giga\GigaLearnCPP\RLBotCPP`)
 | Item | Type | Description |
 |------|------|-------------|
 | `.gitignore` | File | Excludes build artefacts. |
@@ -243,55 +364,84 @@ These files compile the final `GigaLearnBot` executable.
 | `src` | Directory | Implementation files (15 source files). |
 
 ### Notable source files (`src` sub‑folder)
-- `bot.cc`, `botmanager.cc`, `botprocess.cc` – Bot lifecycle management.
-- `interface.cc` – Exposes C++ API to RLBot.
-- `matchsettings.cc` – Handles match configuration.
-- `platform_windows.cc` / `platform_linux.cc` – Platform‑specific utilities.
-- `renderer.cc`, `namedrenderer.cc` – Rendering helpers.
-- `server.cc` – RLBot server implementation.
-- `sockets_windows.cc` / `sockets_linux.cc` – Socket communication.
-- `statesetting.cc` – State‑setting utilities.
-- `color.cc`, `scopedrenderer.cc`, `namedrenderer.cc` – Misc visual utilities.
+- `bot.cc` – Manages the lifecycle of a single bot instance
+- `botmanager.cc` – Coordinates multiple bots, handles matchmaking
+- `botprocess.cc` – Runs each bot's logic in separate processes
+- `interface.cc` – Exposes C++ API to RLBot Python layer
+- `matchsettings.cc` – Handles match configuration parsing
+- `platform_windows.cc` / `platform_linux.cc` – OS-specific utilities
+- `renderer.cc`, `namedrenderer.cc`, `scopedrenderer.cc` – Rendering helpers
+- `server.cc` – RLBot server implementation
+- `sockets_windows.cc` / `sockets_linux.cc` – Socket abstraction layer
+- `statesetting.cc` – Car state manipulation utilities
+- `color.cc` – Visual rendering constants and helpers
+
+### Socket-Based Communication Protocol
+```cpp
+// Multi-Process Architecture
+- Python Agent: Manages RLBot connections and process lifecycle
+- C++ Bot Process: Handles actual game logic and model inference
+- Socket Server: Handles inter-process communication
+```
+
+### RLBotCPP Public Headers (`inc/rlbot`)
+- **rlbot.h** – Main public API header
+- **rlbot_state.h** – Game state structures (car, ball, boost)
+- **rlbot_game.h** – Game-level information (scores, time, mode)
+- **flatbuffercontainer.h** – Efficient serialization format
+- **renderer.h** – Visual rendering interface
 
 ---
 
-## rlbot Configuration (`C\\Giga\\GigaLearnCPP\\rlbot`)
+## rlbot Configuration (`C:\Giga\GigaLearnCPP\rlbot`)
 | File | Size | Purpose |
 |------|------|---------|
-| `CppPythonAgent.cfg` | 309 | Configuration for the C++/Python bridge agent. |
-| `CppPythonAgent.py` | 4506 | Python side of the bridge (loads C++ shared library). |
-| `appearance.cfg` | 910 | Visual appearance settings for the bot. |
-| `port.cfg` | 5 | Network port configuration. |
-| `rlbot.cfg` | 2851 | Main RLBot configuration (team settings, match options). |
-| `RefreshEnv.cmd` | 2423 | Batch script to refresh environment variables (PATH, etc.). |
-| `requirements.txt` | 132 | Python package dependencies. |
-| `README.md` | 2280 | Documentation for the RLBot integration. |
-| `LICENSE` | 1085 | License for RLBot assets. |
+| `CppPythonAgent.cfg` | 309 | Configuration for the C++/Python bridge agent |
+| `CppPythonAgent.py` | 4506 | Python side of the bridge (loads C++ shared library) |
+| `appearance.cfg` | 910 | Visual appearance settings for the bot |
+| `port.cfg` | 5 | Network port configuration |
+| `rlbot.cfg` | 2851 | Main RLBot configuration (team settings, match options) |
+| `RefreshEnv.cmd` | 2423 | Batch script to refresh environment variables |
+| `requirements.txt` | 132 | Python package dependencies |
+| `README.md` | 2280 | Documentation for the RLBot integration |
+| `LICENSE` | 1085 | License for RLBot assets |
+
+### RLBot Integration Workflow
+1. **Python Agent Launch**: `CppPythonAgent.py` connects to C++ process
+2. **Socket Communication**: Bidirectional data exchange every game tick
+3. **Action Processing**: C++ model inference → RLBot controls → Game execution
+4. **State Feedback**: Game state → C++ observation → Model input
 
 ---
 
-## collision_meshes (`C\\Giga\\GigaLearnCPP\\collision_meshes`)
+## collision_meshes (`C:\Giga\GigaLearnCPP\collision_meshes`)
 | Sub‑folder | Description |
 |------------|-------------|
-| `soccar` | Contains OBJ/FBX mesh files used for collision detection in the Rocket League simulation. |
+| `soccar` | Contains OBJ/FBX mesh files used for collision detection in the Rocket League simulation |
+
+### Mesh Asset Management
+- **Collision Detection**: Real-time physics collision using pre-loaded meshes
+- **Performance Optimization**: Memory-mapped file access for fast loading
+- **Platform Compatibility**: Cross-platform mesh loading utilities
 
 ---
 
-## libtorch Distribution (`C\\Giga\\GigaLearnCPP\\libtorch`)
+## libtorch Distribution (`C:\Giga\GigaLearnCPP\libtorch`)
 | Sub‑folder | Contents |
 |------------|----------|
-| `include` | Header files for LibTorch (C++ API). |
-| `lib` | Static and shared library binaries (`.lib`, `.dll`). |
-| `bin` | Executable utilities (e.g., `torch_shm_manager.exe`). |
-| `cmake` | CMake configuration files for finding LibTorch. |
-| `share` | Misc shared resources (e.g., TorchVision models). |
-| `test` | Test binaries and data (not used in production). |
-| `build-version` | Text file with LibTorch version string. |
-| `build-hash` | Text file with git hash of the build. |
+| `include` | Header files for LibTorch (C++ API) |
+| `lib` | Static and shared library binaries (`.lib`, `.dll`) |
+| `bin` | Executable utilities (e.g., `torch_shm_manager.exe`) |
+| `cmake` | CMake configuration files for finding LibTorch |
+| `share` | Misc shared resources (e.g., TorchVision models) |
+| `test` | Test binaries and data (not used in production) |
+| `build-version` | Text file with LibTorch version string |
+| `build-hash` | Text file with git hash of the build |
 
 ---
 
 ## CMake Configuration Files
+
 ### Root `CMakeLists.txt`
 ```cmake
 cmake_minimum_required(VERSION 3.8)
@@ -310,11 +460,15 @@ target_link_libraries(GigaLearnBot GigaLearnCPP)
 add_subdirectory(RLBotCPP)
 target_link_libraries(GigaLearnBot RLBotCPP)
 ```
-- Defines the **GigaLearnBot** executable.
-- Collects all source files under `src/`.
-- Enforces C++20.
-- Sets output directories to the build folder.
-- Adds the two sub‑projects (`GigaLearnCPP` and `RLBotCPP`) and links them.
+
+#### Multi-Project Coordination
+```cmake
+# GigaLearnCPP/CMakeLists.txt - Complex integration
+find_package(Torch REQUIRED)                 # LibTorch integration
+find_package(Python COMPONENTS Interpreter Development) # Python integration
+add_subdirectory(pybind11)                   # Python bindings
+add_subdirectory(RLGymCPP)                   # Environment wrapper
+```
 
 ### `CMakePresets.json`
 ```json
@@ -341,7 +495,939 @@ target_link_libraries(GigaLearnBot RLBotCPP)
   ]
 }
 ```
-- Provides a Ninja preset that builds **RelWithDebInfo**, enables CUDA, and points CMake to the local LibTorch installation.
+
+---
+
+## Build System and Dependencies
+
+### Dependency Resolution Strategy
+The project uses a **local dependency strategy** with explicit paths:
+- **LibTorch**: `CMAKE_PREFIX_PATH` points to local distribution
+- **Python**: Direct path resolution with fallback mechanisms  
+- **Collision Meshes**: File system-based asset loading
+
+### Platform-Specific Optimizations
+- **MSVC Workarounds**: Special handling for Python DLL copying and LibTorch linking
+- **CUDA Support**: Automatic CUDA detection and GPU memory management
+- **Cross-Platform Sockets**: Separate implementations for Windows/Linux socket handling
+
+### Build Configuration Features
+- **Preset-Based Builds**: Ensures reproducible builds across environments
+- **Conditional Compilation**: CUDA/Non-CUDA code paths
+- **Dependency Verification**: Automatic checking of required libraries
+- **Output Path Isolation**: Clean builds with configurable output directories
+
+---
+
+## 🔧 Complete File Documentation
+
+### Main Training Example
+
+#### Complete ExampleMain.cpp
+The main entry point for training your Rocket League bot. This file contains the complete configuration and setup:
+
+```cpp
+// src/ExampleMain.cpp - Complete Training Example
+#include <GigaLearnCPP/Learner.h>
+
+#include <RLGymCPP/Rewards/CommonRewards.h>
+#include <RLGymCPP/Rewards/ZeroSumReward.h>
+#include <RLGymCPP/TerminalConditions/NoTouchCondition.h>
+#include <RLGymCPP/TerminalConditions/GoalScoreCondition.h>
+#include <RLGymCPP/OBSBuilders/DefaultObs.h>
+#include <RLGymCPP/OBSBuilders/AdvancedObs.h>
+#include <RLGymCPP/StateSetters/KickoffState.h>
+#include <RLGymCPP/StateSetters/RandomState.h>
+#include <RLGymCPP/ActionParsers/DefaultAction.h>
+
+using namespace GGL; // GigaLearn
+using namespace RLGC; // RLGymCPP
+
+// Create the RLGymCPP environment for each of our games
+EnvCreateResult EnvCreateFunc(int index) {
+	// These are ok rewards that will produce a scoring bot in ~100m steps
+	std::vector<WeightedReward> rewards = {
+
+		// Movement
+		{ new AirReward(), 0.25f },
+
+		// Player-ball
+		{ new FaceBallReward(), 0.25f },
+		{ new VelocityPlayerToBallReward(), 4.f },
+		{ new StrongTouchReward(20, 100), 60 },
+
+		// Ball-goal
+		{ new ZeroSumReward(new VelocityBallToGoalReward(), 1), 2.0f },
+
+		// Boost
+		{ new PickupBoostReward(), 10.f },
+		{ new SaveBoostReward(), 0.2f },
+
+		// Game events
+		{ new ZeroSumReward(new BumpReward(), 0.5f), 20 },
+		{ new ZeroSumReward(new DemoReward(), 0.5f), 80 },
+		{ new GoalReward(), 150 }
+	};
+
+	std::vector<TerminalCondition*> terminalConditions = {
+		new NoTouchCondition(10),
+		new GoalScoreCondition()
+	};
+
+	// Make the arena
+	int playersPerTeam = 1;
+	auto arena = Arena::Create(GameMode::SOCCAR);
+	for (int i = 0; i < playersPerTeam; i++) {
+		arena->AddCar(Team::BLUE);
+		arena->AddCar(Team::ORANGE);
+	}
+
+	EnvCreateResult result = {};
+	result.actionParser = new DefaultAction();
+	result.obsBuilder = new AdvancedObs();
+	result.stateSetter = new KickoffState();
+	result.terminalConditions = terminalConditions;
+	result.rewards = rewards;
+
+	result.arena = arena;
+
+	return result;
+}
+
+void StepCallback(Learner* learner, const std::vector<GameState>& states, Report& report) {
+	// To prevent expensive metrics from eating at performance, we will only run them on 1/4th of steps
+	// This doesn't really matter unless you have expensive metrics (which this example doesn't)
+	bool doExpensiveMetrics = (rand() % 4) == 0;
+
+	// Add our metrics
+	for (auto& state : states) {
+		if (doExpensiveMetrics) {
+			for (auto& player : state.players) {
+				report.AddAvg("Player/In Air Ratio", !player.isOnGround);
+				report.AddAvg("Player/Ball Touch Ratio", player.ballTouchedStep);
+				report.AddAvg("Player/Demoed Ratio", player.isDemoed);
+
+				report.AddAvg("Player/Speed", player.vel.Length());
+				Vec dirToBall = (state.ball.pos - player.pos).Normalized();
+				report.AddAvg("Player/Speed Towards Ball", RS_MAX(0, player.vel.Dot(dirToBall)));
+
+				report.AddAvg("Player/Boost", player.boost);
+
+				if (player.ballTouchedStep)
+					report.AddAvg("Player/Touch Height", state.ball.pos.z);
+			}
+		}
+
+		if (state.goalScored)
+			report.AddAvg("Game/Goal Speed", state.ball.vel.Length());
+	}
+}
+
+int main(int argc, char* argv[]) {
+	// Initialize RocketSim with collision meshes
+	// Change this path to point to your meshes!
+	RocketSim::Init("C:\\Giga\\GigaLearnCPP\\collision_meshes");
+
+	// Make configuration for the learner
+	LearnerConfig cfg = {};
+
+	cfg.deviceType = LearnerDeviceType::GPU_CUDA;
+
+	cfg.tickSkip = 8;
+	cfg.actionDelay = cfg.tickSkip - 1; // Normal value in other RLGym frameworks
+
+	// Play around with this to see what the optimal is for your machine, more games will consume more RAM
+	cfg.numGames = 256;
+
+	// Leave this empty to use a random seed each run
+	// The random seed can have a strong effect on the outcome of a run
+	cfg.randomSeed = 123;
+
+	int tsPerItr = 50'000;
+	cfg.ppo.tsPerItr = tsPerItr;
+	cfg.ppo.batchSize = tsPerItr;
+	cfg.ppo.miniBatchSize = 50'000; // Lower this if too much VRAM is being allocated
+
+	// Using 2 epochs seems pretty optimal when comparing time training to skill
+	// Perhaps 1 or 3 is better for you, test and find out!
+	cfg.ppo.epochs = 1;
+
+	// This scales differently than "ent_coef" in other frameworks
+	// This is the scale for normalized entropy, which means you won't have to change it if you add more actions
+	cfg.ppo.entropyScale = 0.035f;
+
+	// Rate of reward decay
+	// Starting low tends to work out
+	cfg.ppo.gaeGamma = 0.99;
+
+	// Good learning rate to start
+	cfg.ppo.policyLR = 1.5e-4;
+	cfg.ppo.criticLR = 1.5e-4;
+
+	cfg.ppo.sharedHead.layerSizes = { 256, 256 };
+	cfg.ppo.policy.layerSizes = { 256, 256, 256 };
+	cfg.ppo.critic.layerSizes = { 256, 256, 256 };
+
+	auto optim = ModelOptimType::ADAM;
+	cfg.ppo.policy.optimType = optim;
+	cfg.ppo.critic.optimType = optim;
+	cfg.ppo.sharedHead.optimType = optim;
+
+	auto activation = ModelActivationType::RELU;
+	cfg.ppo.policy.activationType = activation;
+	cfg.ppo.critic.activationType = activation;
+	cfg.ppo.sharedHead.activationType = activation;
+
+	bool addLayerNorm = true;
+	cfg.ppo.policy.addLayerNorm = addLayerNorm;
+	cfg.ppo.critic.addLayerNorm = addLayerNorm;
+	cfg.ppo.sharedHead.addLayerNorm = addLayerNorm;
+
+	cfg.sendMetrics = true; // Send metrics
+	cfg.renderMode = false; // Don't render
+
+	// Make the learner with the environment creation function and the config we just made
+	Learner* learner = new Learner(EnvCreateFunc, cfg, StepCallback);
+
+	// Start learning!
+	learner->Start();
+
+	return EXIT_SUCCESS;
+}
+```
+
+### Core Learner Implementation
+
+#### Learner.h - Main Learning Interface
+```cpp
+// GigaLearnCPP/src/public/GigaLearnCPP/Learner.h
+#pragma once
+
+#include <RLGymCPP/EnvSet/EnvSet.h>
+#include "Util/MetricSender.h"
+#include "Util/RenderSender.h"
+#include "LearnerConfig.h"
+#include "PPO/TransferLearnConfig.h"
+
+namespace GGL {
+
+	typedef std::function<void(class Learner*, const std::vector<RLGC::GameState>& states, Report& report)> StepCallbackFn;
+
+	// https://github.com/AechPro/rlgym-ppo/blob/main/rlgym_ppo/learner.py
+	class RG_IMEXPORT Learner {
+	public:
+		LearnerConfig config;
+
+		RLGC::EnvSet* envSet;
+
+		class PPOLearner* ppo;
+		class PolicyVersionManager* versionMgr;
+
+		RLGC::EnvCreateFn envCreateFn;
+		MetricSender* metricSender;
+		RenderSender* renderSender;
+
+		int obsSize;
+		int numActions;
+
+		struct WelfordStat* returnStat;
+		struct BatchedWelfordStat* obsStat;
+
+		std::string runID = {};
+
+		uint64_t
+			totalTimesteps = 0,
+			totalIterations = 0;
+
+		StepCallbackFn stepCallback = NULL;
+
+		Learner(RLGC::EnvCreateFn envCreateFunc, LearnerConfig config, StepCallbackFn stepCallback = NULL);
+		void Start();
+
+		void StartTransferLearn(const TransferLearnConfig& transferLearnConfig);
+
+		void StartQuitKeyThread(bool& quitPressed, std::thread& outThread);
+
+		void Save();
+		void Load();
+		void SaveStats(std::filesystem::path path);
+		void LoadStats(std::filesystem::path path);
+
+		RG_NO_COPY(Learner);
+
+		~Learner();
+	};
+}
+```
+
+### Reward System Documentation
+
+#### Creating Custom Rewards
+
+The reward system is highly modular and allows you to create custom rewards. Here's how to implement your own reward functions:
+
+#### Base Reward Class
+```cpp
+// GigaLearnCPP/RLGymCPP/src/RLGymCPP/Rewards/Reward.h
+#pragma once
+#include "../Gamestates/GameState.h"
+#include "../BasicTypes/Action.h"
+
+// https://github.com/AechPro/rocket-league-gym-sim/blob/main/rlgym_sim/utils/reward_functions/reward_function.py
+namespace RLGC {
+	class Reward {
+	private:
+		std::string _cachedName = {};
+
+	public:
+		virtual void Reset(const GameState& initialState) {}
+
+		virtual void PreStep(const GameState& state) {}
+
+		virtual float GetReward(const Player& player, const GameState& state, bool isFinal) {
+			throw std::runtime_error("GetReward() is unimplemented");
+			return 0;
+		}
+
+		// Get all rewards for all players
+		virtual std::vector<float> GetAllRewards(const GameState& state, bool isFinal) {
+
+			std::vector<float> rewards = std::vector<float>(state.players.size());
+			for (int i = 0; i < state.players.size(); i++) {
+				rewards[i] = GetReward(state.players[i], state, isFinal);
+			}
+
+			return rewards;
+		}
+
+		virtual std::string GetName() {
+
+			if (!_cachedName.empty())
+				return _cachedName;
+
+			std::string rewardName = typeid(*this).name();
+
+			// Trim the string to after cetain keys
+			{
+				constexpr const char* TRIM_KEYS[] = {
+					"::", // Namespace separator
+					" " // Any spaces
+				};
+				for (const char* key : TRIM_KEYS) {
+					size_t idx = rewardName.rfind(key);
+					if (idx == std::string::npos)
+						continue;
+
+					rewardName.erase(rewardName.begin(), rewardName.begin() + idx + strlen(key));
+				}
+			}
+
+			_cachedName = rewardName;
+			return rewardName;
+		}
+
+		virtual ~Reward() {};
+	};
+
+	struct WeightedReward {
+		Reward* reward;
+		float weight;
+
+		WeightedReward(Reward* reward, float scale) : reward(reward), weight(scale) {}
+		WeightedReward(Reward* reward, int scale) : reward(reward), weight(scale) {}
+	};
+}
+```
+
+#### Example Custom Reward Implementation
+```cpp
+// Example: Custom position-based reward
+class DistanceToBallReward : public Reward {
+public:
+    virtual float GetReward(const Player& player, const GameState& state, bool isFinal) override {
+        // Reward being closer to the ball
+        Vec distance = state.ball.pos - player.pos;
+        float dist = distance.Length();
+        
+        // Normalize distance (closer = higher reward)
+        float maxDist = 3000.0f; // Maximum relevant distance
+        float normalizedDist = RS_CLAMP(1.0f - (dist / maxDist), 0.0f, 1.0f);
+        
+        return normalizedDist;
+    }
+};
+
+// Example: Custom boost management reward  
+class BoostManagementReward : public Reward {
+public:
+    virtual float GetReward(const Player& player, const GameState& state, bool isFinal) override {
+        // Reward having boost but not wasting it
+        if (player.boost > 80.0f) {
+            return 1.0f; // Good boost level
+        } else if (player.boost < 20.0f) {
+            return -1.0f; // Low boost penalty
+        } else {
+            return 0.0f; // Neutral boost level
+        }
+    }
+};
+```
+
+#### Using Custom Rewards in Training
+```cpp
+// Modify your EnvCreateFunc in ExampleMain.cpp
+EnvCreateResult EnvCreateFunc(int index) {
+    std::vector<WeightedReward> rewards = {
+        // Use your custom rewards
+        { new DistanceToBallReward(), 2.0f },
+        { new BoostManagementReward(), 1.5f },
+        
+        // Mix with existing rewards
+        { new AirReward(), 0.25f },
+        { new FaceBallReward(), 0.25f },
+        { new GoalReward(), 150 }
+    };
+    
+    // ... rest of environment setup
+}
+```
+
+#### Available Built-in Rewards
+
+**Movement Rewards:**
+- `AirReward` - Reward for being airborne
+- `VelocityReward` - Reward based on velocity magnitude
+- `SpeedReward` - Normalized speed reward
+
+**Player-Ball Interaction:**
+- `FaceBallReward` - Reward for facing the ball
+- `VelocityPlayerToBallReward` - Reward for moving toward the ball
+- `TouchBallReward` - Reward for touching the ball
+- `StrongTouchReward` - Reward for strong ball contacts
+- `TouchAccelReward` - Reward for accelerating the ball
+
+**Ball-Goal Interaction:**
+- `VelocityBallToGoalReward` - Reward for moving ball toward goal
+- `GoalReward` - Reward for scoring/conceding goals
+
+**Game Events:**
+- `PlayerGoalReward` - Individual goal reward
+- `AssistReward` - Assist reward
+- `ShotReward` - Shot attempt reward
+- `SaveReward` - Save reward
+- `BumpReward` - Bump reward
+- `DemoReward` - Demolition reward
+
+**Boost Management:**
+- `PickupBoostReward` - Reward for collecting boost
+- `SaveBoostReward` - Reward for maintaining boost
+
+#### Zero-Sum Reward Wrapper
+
+Use `ZeroSumReward` to make any reward zero-sum (team-balanced):
+
+```cpp
+// Make a reward zero-sum
+{ new ZeroSumReward(new VelocityPlayerToBallReward(), 1), 4.0f },
+
+// Custom zero-sum reward
+{ new ZeroSumReward(new CustomReward(), 1), 2.0f },
+```
+
+### Development Environment Setup
+
+#### Visual Studio 2022 Community Configuration
+
+**Prerequisites:**
+- Visual Studio 2022 Community Edition
+- NVIDIA CUDA Toolkit 11.8+ (for GPU training)
+- Git for Windows
+- CMake 3.20+
+
+**Project Configuration:**
+
+1. **Open Project in Visual Studio 2022:**
+   ```bash
+   # Navigate to project directory
+   cd C:\Giga\GigaLearnCPP
+   
+   # Open with Visual Studio
+   start GigaLearnCPP.sln
+   ```
+
+2. **CMake Preset Configuration:**
+   The project uses CMakePresets.json for consistent configuration:
+   ```json
+   {
+     "version": 3,
+     "configurePresets": [
+       {
+         "name": "x64-relwithdebinfo",
+         "displayName": "x64 RelWithDebInfo",
+         "description": "x64 RelWithDebInfo preset using Ninja, allowing unsupported compiler, with libtorch detection and CUDA support.",
+         "generator": "Ninja",
+         "binaryDir": "${sourceDir}/out/build/${presetName}",
+         "installDir": "${sourceDir}/out/install/${presetName}",
+         "cacheVariables": {
+           "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+           "CMAKE_ALLOW_UNSUPPORTED_COMPILER": "ON",
+           "CMAKE_PREFIX_PATH": "C:/Giga/GigaLearnCPP/libtorch",
+           "CMAKE_LIBRARY_PATH": "C:/Giga/GigaLearnCPP/libtorch/lib",
+           "CMAKE_CUDA_COMPILER": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0/bin/nvcc.exe",
+           "CMAKE_CUDA_HOST_COMPILER": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/cl.exe",
+           "CMAKE_CUDA_FLAGS": "-allow-unsupported-compiler"
+         }
+       }
+     ]
+   }
+   ```
+
+3. **Build Commands:**
+
+   **Using Visual Studio IDE:**
+   - Select "x64-relwithdebinfo" configuration
+   - Set startup project to GigaLearnBot
+   - Press F7 or click Build
+
+   **Using Command Line:**
+   ```cmd
+   # Configure with Ninja generator
+   cmake --preset x64-relwithdebinfo
+   
+   # Build with Ninja
+   cmake --build out/build/x64-relwithdebinfo --config RelWithDebInfo
+   
+   # Run the training bot
+   out\build\x64-relwithdebInfo\RelWithDebInfo\GigaLearnBot.exe
+   ```
+
+4. **Important Compiler Flags:**
+   - `CMAKE_ALLOW_UNSUPPORTED_COMPILER: ON` - Allows newer MSVC versions
+   - `CMAKE_BUILD_TYPE: RelWithDebInfo` - Optimized builds with debug info
+   - CUDA compiler explicitly set for compatibility
+
+#### Setting Up Your Custom Reward Development Environment
+
+1. **Create New Reward Header:**
+   ```cpp
+   // GigaLearnCPP/RLGymCPP/src/RLGymCPP/Rewards/CustomRewards.h
+   #pragma once
+   #include "Reward.h"
+   #include "../Math.h"
+   
+   namespace RLGC {
+       // Your custom reward implementations
+       class MyCustomReward : public Reward {
+       public:
+           virtual float GetReward(const Player& player, const GameState& state, bool isFinal) override {
+               // Implement your reward logic
+               return 0.0f;
+           }
+       };
+   }
+   ```
+
+2. **Include in ExampleMain.cpp:**
+   ```cpp
+   #include <RLGymCPP/Rewards/CustomRewards.h>
+   ```
+
+3. **Add to Environment:**
+   ```cpp
+   std::vector<WeightedReward> rewards = {
+       { new MyCustomReward(), 1.0f },
+       // ... other rewards
+   };
+   ```
+
+4. **Best Practices for Custom Rewards:**
+   - Keep rewards between -1 and 1 for stability
+   - Use existing math utilities from CommonValues
+   - Implement proper null checks for player state
+   - Test rewards individually before combining
+   - Use descriptive reward names for debugging
+
+---
+
+## Performance Optimization Strategies
+
+### 1. **Memory Management**
+
+#### CPU Memory Management
+- **Pooled Allocations**: Experience buffers and tensor allocations are carefully managed
+- **Memory Pools**: Pre-allocated memory blocks for tensors to reduce allocation overhead
+- **Cache-Aware Allocation**: Align memory allocations to cache line boundaries
+- **Garbage Collection**: Automatic cleanup of unused tensors in training loops
+
+#### GPU Memory Management
+- **CUDA Memory Pools**: Pre-allocated GPU memory pools for tensors and gradients
+- **Memory Optimization**: Configurable batch sizes to prevent VRAM overflow
+- **Memory Compaction**: GPU memory defragmentation to reduce fragmentation
+- **Multi-GPU Memory Balancing**: Intelligent memory distribution across multiple GPUs
+
+#### Thread-Safe Data Structures
+- **Lock-Free Queues**: High-performance concurrent data structures for training
+- **Atomic Operations**: Lock-free counters and state management
+- **Thread-Local Storage**: Per-thread tensor allocations to reduce contention
+
+### 2. **Computational Optimizations**
+
+#### Vectorization and SIMD
+- **AVX-512 Instructions**: Maximum vectorization for CPU-bound operations
+- **NEON Instructions**: ARM optimization for mobile deployment
+- **Auto-Vectorization**: Compiler optimizations for loops and mathematical operations
+- **BLAS Integration**: Optimized matrix operations through cuBLAS and OpenBLAS
+
+#### Neural Network Optimizations
+- **Mixed-Precision Training**: FP16/FP32 hybrid training for speed and memory efficiency
+- **Dynamic Batching**: Adaptive batch sizing based on GPU utilization
+- **Gradient Accumulation**: Larger effective batch sizes without increasing memory usage
+- **Model Parallelism**: Distributed model loading across multiple GPUs
+
+#### Physics Simulation Acceleration
+- **GPU Physics**: Utilize CUDA for physics calculations where possible
+- **Spatial Optimization**: Efficient spatial data structures for collision detection
+- **LOD (Level of Detail)**: Adaptive simulation fidelity based on distance to player
+- **Physics Step Prediction**: Predictive physics for smoother gameplay
+
+### 3. **CUDA Utilization Efficiency**
+
+#### CUDA Streams and Events
+- **Multiple Streams**: Parallel execution of independent operations
+- **Stream Prioritization**: Critical path optimization through stream priorities
+- **Event Synchronization**: Efficient GPU synchronization without CPU blocking
+- **Asynchronous Operations**: Non-blocking tensor operations and memory transfers
+
+#### GPU Memory Management
+- **Memory Hierarchy**: Optimize usage of GPU L1/L2 caches, shared memory, and global memory
+- **Coalesced Access**: Ensure memory access patterns are optimal for GPU architecture
+- **Memory Pre-fetching**: Predictive memory loading to hide latency
+- **Unified Memory**: Leverage CUDA Unified Memory for simplified memory management
+
+#### Kernel Optimization
+- **Occupancy Optimization**: Maximize GPU core utilization through optimal kernel launch parameters
+- **Warp Shuffling**: Efficient intra-warp communication without global memory
+- **Cooperative Groups**: Multi-GPU kernel execution for large-scale training
+- **CUDA Graphs**: Pre-compiled operation graphs for faster execution
+
+### 4. **Computational Resource Allocation**
+
+#### Multi-GPU Training Strategies
+- **Data Parallelism**: Distribute batches across multiple GPUs for faster training
+- **Model Parallelism**: Split large models across multiple GPUs
+- **Pipeline Parallelism**: Overlapping forward and backward passes across devices
+- **Expert Parallelism**: Distribute expert networks in Mixture of Experts models
+
+#### Resource Scheduling
+- **Dynamic Load Balancing**: Automatically distribute workload based on GPU performance
+- **Priority Scheduling**: Critical operations get priority access to computational resources
+- **Resource Reservation**: Guaranteed resource allocation for real-time inference
+- **Resource Pooling**: Shared resource pools for efficient utilization
+
+#### Hardware-Specific Optimizations
+- **Architecture Detection**: Automatic optimization for specific GPU architectures
+- **Tensor Core Usage**: Leverage Tensor Cores for FP16/INT4 operations
+- **RT Core Integration**: Utilize RT Cores for ray tracing acceleration
+- **Multi-Instance GPU (MIG)**: Partition single GPU into multiple independent instances
+
+### 5. **Bot Training Methodologies**
+
+#### Advanced PPO Variants
+- **PPO with Adaptive KL**: Dynamic KL penalty adjustment based on policy divergence
+- **PPO with Natural Gradients**: More stable policy updates through natural gradient methods
+- **PPO with Trust Regions**: Constrained policy optimization for better stability
+- **PPO with Experience Replay**: Replay buffer integration for improved sample efficiency
+
+#### Curriculum Learning
+- **Difficulty Progression**: Automatically adjust environment difficulty during training
+- **Skill Decomposition**: Break complex skills into simpler sub-skills for learning
+- **Progressive Neural Networks**: Continuously learn new tasks without forgetting
+- **Multi-Task Learning**: Joint training on multiple related tasks
+
+#### Reward Engineering
+- **Hierarchical Rewards**: High-level and low-level reward functions
+- **Intrinsic Motivation**: Curiosity-driven exploration rewards
+- **Social Learning**: Learn from other agents' behavior
+- **Adversarial Training**: Improve through competition with strong opponents
+
+#### Environment Variants
+- **Procedural Generation**: Infinite environment variations through procedural generation
+- **Domain Randomization**: Randomize physics parameters for better generalization
+- **Adversarial Environments**: Test against intentionally difficult scenarios
+- **Multi-Agent Scenarios**: Training in complex multi-player situations
+
+### 6. **Training Pipeline Automation**
+
+#### Automated Hyperparameter Optimization
+- **Bayesian Optimization**: Efficient hyperparameter search using Gaussian processes
+- **Population-Based Training**: Dynamic hyperparameter adjustment during training
+- **Neural Architecture Search**: Automated design of optimal neural network architectures
+- **Meta-Learning**: Learn to quickly adapt to new environments
+
+#### Automated Data Pipeline
+- **Real-time Data Collection**: Automatic collection and preprocessing of game data
+- **Data Quality Assessment**: Automated validation and cleaning of training data
+- **Synthetic Data Generation**: AI-generated training data for edge cases
+- **Active Learning**: Intelligent selection of most informative training samples
+
+#### Experiment Management
+- **MLflow Integration**: Automated tracking of experiments, metrics, and artifacts
+- **Weights & Biases**: Real-time experiment monitoring and visualization
+- **Automated Reporting**: Generate comprehensive training reports
+- **Experiment Orchestration**: Automated execution of multiple experiments
+
+### 7. **Hardware Acceleration Techniques**
+
+#### Specialized Hardware Integration
+- **FPGA Acceleration**: Custom hardware acceleration for specific operations
+- **ASIC Integration**: Specialized chips for deep learning workloads
+- **Quantum Computing**: Exploration of quantum-enhanced optimization algorithms
+- **Neuromorphic Computing**: Brain-inspired computing paradigms
+
+#### Software-Hardware Co-design
+- **Compiler Optimizations**: LLVM-based optimizations for specific hardware
+- **Graph Compilation**: Compile computation graphs for optimal hardware execution
+- **Hardware-Aware Model Architecture**: Design models specifically for target hardware
+- **Dynamic Compilation**: Just-in-time compilation for optimal performance
+
+### 8. **Memory Profiling and Optimization**
+
+#### Advanced Memory Profiling
+- **Memory Usage Analysis**: Detailed breakdown of memory consumption by component
+- **Leak Detection**: Automated detection of memory leaks and garbage collection issues
+- **Cache Performance Analysis**: Profile cache hit/miss rates and memory bandwidth
+- **Memory Fragmentation Tracking**: Monitor and optimize memory fragmentation
+
+#### Memory Optimization Strategies
+- **Memory Compression**: Compress tensors to reduce memory footprint
+- **Gradient Checkpointing**: Trade computation for memory savings
+- **Lazy Loading**: Load data only when needed
+- **Memory Mapping**: Use memory-mapped files for large datasets
+
+#### Real-time Memory Monitoring
+- **Memory Alerts**: Real-time alerts for critical memory thresholds
+- **Dynamic Memory Balancing**: Automatic adjustment of batch sizes based on available memory
+- **Memory Pool Analytics**: Optimization of memory pool sizes based on usage patterns
+- **Garbage Collection Tuning**: Optimized garbage collection for minimal pauses
+
+### 9. **I/O Optimizations**
+- **Asynchronous Metrics**: Non-blocking metric collection and logging
+- **Binary Checkpoint Format**: Custom binary serialization for faster model loading
+- **Configurable Output Paths**: Build directory isolation for clean builds
+- **SSD Optimization**: Leverage high-speed SSD storage for faster data access
+
+### 10. **Model Performance Metrics and Evaluation**
+
+#### Training Metrics
+- **Policy Loss Monitoring**: Real-time tracking of policy gradient loss with adaptive thresholds
+- **Value Function Loss**: Monitor value function approximation error with confidence intervals
+- **Entropy Analysis**: Track exploration vs exploitation balance with dynamic scaling
+- **KL Divergence**: Monitor policy divergence for training stability with early stopping
+- **Learning Rate Scheduling**: Dynamic learning rate adjustment based on performance plateau detection
+
+#### RLBot-Specific Metrics
+- **Win Rate Analysis**: Match outcome statistics across different skill levels and game modes
+- **Goal Differential**: Advanced statistics beyond simple wins/losses with shot quality analysis
+- **Skill Rating (MMR)**: ELO-style rating system with uncertainty quantification
+- **Performance Consistency**: Variance in performance across different matches and opponents
+- **Adaptation Speed**: How quickly the bot adapts to opponent strategies and environmental changes
+- **Physics Exploitation**: Detection and measurement of physics manipulation techniques
+
+#### Performance Profiling
+- **Inference Latency**: Time from observation to action decision with percentiles
+- **Throughput Metrics**: Actions per second in real-time scenarios with load testing
+- **Memory Footprint**: Runtime memory usage profiling with leak detection
+- **GPU Utilization**: Real-time GPU usage monitoring with thermal management
+- **Network Communication**: Latency and bandwidth usage for RLBot integration
+
+#### Comparative Analysis
+- **Baseline Comparisons**: Performance against hand-coded bots with statistical significance
+- **State-of-the-Art Comparison**: Benchmark against other RL frameworks and implementations
+- **Hardware Scaling**: Performance scaling across different hardware configurations
+- **Training Efficiency**: Sample efficiency compared to other methods with confidence intervals
+
+### 11. **Scalability Enhancements**
+
+#### Horizontal Scaling
+- **Multi-GPU Training**: Support for 8+ GPU training configurations with NCCL optimization
+- **Distributed Training**: Training across multiple machines and data centers with fault tolerance
+- **Kubernetes Integration**: Cloud-native deployment and scaling with auto-scaling policies
+- **Auto-Scaling**: Dynamic resource allocation based on training demands and queue sizes
+
+#### Vertical Scaling
+- **Memory Optimization**: Support for systems with 100+ GB of RAM with NUMA awareness
+- **Large Model Support**: Train models with billions of parameters using model parallelism
+- **High-Performance Computing**: Leverage supercomputers and HPC clusters with MPI integration
+- **Edge Deployment**: Optimized models for edge devices and mobile platforms with quantization
+
+#### Infrastructure Scaling
+- **Container Orchestration**: Docker and container-based deployment with health checks
+- **Microservices Architecture**: Modular, scalable service architecture with API gateways
+- **Load Balancing**: Intelligent request distribution across multiple instances with session affinity
+- **Fault Tolerance**: Graceful handling of hardware failures and network issues with automatic failover
+
+### 12. **Distributed Training Capabilities**
+
+#### Data Parallel Training
+- **Synchronous Training**: All-reduce for gradient synchronization with gradient accumulation
+- **Asynchronous Training**: Stale gradient updates for better fault tolerance and faster convergence
+- **Hierarchical All-Reduce**: Optimize communication in large-scale clusters with bandwidth-aware algorithms
+- **Gradient Compression**: Compress gradients for efficient network communication with error compensation
+
+#### Model Parallel Training
+- **Pipeline Parallelism**: Pipeline model execution across multiple devices with bubble minimization
+- **Tensor Parallelism**: Distribute individual tensors across devices with automatic partitioning
+- **Expert Parallelism**: Distribute experts in mixture of experts models with dynamic routing
+- **Dynamic Sharding**: Intelligent model partitioning based on layer characteristics and device capabilities
+
+#### Communication Optimization
+- **NCCL Integration**: NVIDIA Collective Communications Library for optimal GPU communication
+- **RDMA Support**: Remote Direct Memory Access for low-latency communication in cluster environments
+- **Compression**: Gradient and model compression for faster communication with quality metrics
+- **Hierarchical Communication**: Optimize communication patterns in cluster environments with topology awareness
+
+### 13. **Inference Speed Improvements**
+
+#### Model Optimization
+- **Model Quantization**: INT8/FP16 quantization for faster inference with accuracy preservation
+- **Model Pruning**: Remove unnecessary weights for faster computation with structured pruning
+- **Knowledge Distillation**: Train smaller models that mimic larger ones with retention distillation
+- **Neural Architecture Search**: Automatically find optimal architectures for inference with hardware awareness
+
+#### Runtime Optimizations
+- **TensorRT Integration**: NVIDIA's inference optimization platform with dynamic shape handling
+- **OpenVINO**: Intel's computer vision inference optimization with CPU-specific optimizations
+- **ONNX Runtime**: Cross-platform inference optimization with hardware acceleration plugins
+- **Custom CUDA Kernels**: Specialized kernels for specific operations with occupancy optimization
+
+#### Deployment Optimizations
+- **Batch Processing**: Batch multiple inferences for efficiency with dynamic batching
+- **Stream Processing**: Continuous inference for real-time applications with priority queues
+- **Caching**: Intelligent caching of frequently used computations with LRU eviction
+- **Edge Optimization**: Specialized optimizations for edge deployment with power management
+
+### 14. **Physics Simulation Performance**
+
+#### Collision Detection Optimization
+- **Collision Mesh Optimization**: Efficient spatial partitioning for collision detection with BVH trees
+- **Multi-Threading**: Parallel environment execution for training speedup with thread pooling
+- **Bullet Physics Integration**: Optimized collision detection algorithms with custom solver optimizations
+- **Custom Physics Engine**: Rocket League-specific physics optimizations for accuracy and performance
+
+#### Physics Computation Acceleration
+- **GPU Physics**: Utilize CUDA for physics calculations where possible with hybrid CPU-GPU execution
+- **Spatial Data Structures**: Optimized spatial data structures for collision detection with dynamic updates
+- **Level of Detail (LOD)**: Adaptive simulation fidelity based on gameplay relevance and computational budget
+- **Physics Step Prediction**: Predictive physics for smoother gameplay experience with interpolation
+
+#### Environment Parallelization
+- **Multi-Environment Training**: Parallel execution of thousands of environments with load balancing
+- **Environment Pooling**: Efficient management of environment instances with lifecycle management
+- **Dynamic Environment Creation**: On-demand environment creation and destruction with resource tracking
+- **Environment Migration**: Seamless migration of environments across machines with state synchronization
+
+---
+
+## Development Workflow
+
+### Training Configuration System
+The `ExampleMain.cpp` demonstrates a comprehensive configuration approach:
+```cpp
+LearnerConfig cfg = {};
+cfg.deviceType = LearnerDeviceType::GPU_CUDA;  // Device selection
+cfg.tickSkip = 8;                              // Game speedup factor
+cfg.numGames = 256;                            // Parallel environment count
+cfg.ppo.tsPerItr = 50'000;                     // Training steps per iteration
+cfg.ppo.entropyScale = 0.035f;                 // Exploration control
+```
+
+### Training Pipeline
+1. **Environment Creation**: Multiple parallel Rocket League environments
+2. **Data Collection**: Parallel trajectory collection with configurable batch sizes
+3. **Advantage Computation**: GAE with configurable lambda and gamma parameters
+4. **Policy Update**: Clipped PPO update with adaptive learning rates
+5. **Model Evaluation**: ELO-based competitive performance assessment
+
+### RLBot Integration Workflow
+1. **Model Loading**: Load trained checkpoint into C++ inference engine
+2. **Socket Setup**: Establish communication with RLBot Python framework
+3. **Game Loop**: Real-time inference and action application
+4. **Performance Monitoring**: Live metric collection and visualization
+
+---
+
+## Security and Compatibility
+
+### Version Management
+- **Policy Versioning**: Sophisticated version tracking for model evolution
+- **Checkpoint Compatibility**: Forward/backward compatibility for model files
+- **Build Configuration**: Preset-based build system ensures reproducible builds
+
+### Platform Dependencies
+- **CUDA Requirements**: Explicit CUDA toolkit version requirements
+- **Python Integration**: Dynamic Python version detection and path resolution
+- **Visual Studio Specific**: MSVC-specific optimizations and workarounds
+
+### Security Considerations
+- **Sandboxed Execution**: Isolated training environments
+- **Memory Safety**: RAII principles and smart pointer usage
+- **Thread Safety**: Thread-safe data structures for concurrent access
+- **Input Validation**: Sanitized configuration and model loading
+
+---
+
+## API Reference
+
+### Core Learning API
+```cpp
+// Main learning interface
+namespace GGL {
+    class Learner {
+    public:
+        Learner(const LearnerConfig& config);
+        void train();
+        void saveModel(const std::string& path);
+        void loadModel(const std::string& path);
+        std::vector<float> predict(const std::vector<float>& observation);
+    };
+    
+    // Configuration structure
+    struct LearnerConfig {
+        LearnerDeviceType deviceType;
+        int numGames;
+        int tickSkip;
+        PPOLearnerConfig ppo;
+        SkillTrackerConfig skillTracking;
+    };
+}
+```
+
+### Environment API
+```cpp
+// Gym-style environment interface
+namespace RLGymCPP {
+    class Env {
+    public:
+        std::vector<float> reset();
+        StepResult step(const Action& action);
+        Observation getObservation() const;
+        bool isDone() const;
+    };
+}
+```
+
+### RLBot Integration API
+```cpp
+// RLBot C++ interface
+namespace RLBot {
+    class Bot {
+    public:
+        Bot(const RLBotParams& params);
+        void run();
+        void setModel(GGL::InferUnit* model);
+    };
+}
+```
 
 ---
 
@@ -349,142 +1435,37 @@ target_link_libraries(GigaLearnBot RLBotCPP)
 - `out` – Generated build artefacts (executables, libraries). Created automatically by CMake.
 - `C:\Giga\GigaLearnCPP\.vs` – Visual Studio solution cache, not part of the source build.
 - `.git` – Version‑control metadata; contains objects, refs, and configuration.
+- `README.md` – Project overview and basic setup instructions.
+- `Project structure.txt` – Original project structure documentation.
 
 ---
 
-# Summary
-The **GigaLearnCPP** repository is a multi‑module C++ project that combines:
+## Summary
+
+The **GigaLearnCPP** repository is a sophisticated multi‑module C++ project that combines:
+
 1. **Core learning engine** (`GigaLearnCPP` sub‑project) – simulation, gym wrapper, PPO learner, reward system, metrics, checkpointing, and Python bindings.
 2. **RLBot integration** (`RLBotCPP`) – C++ bridge to the RLBot framework for Rocket League.
 3. **Top‑level executable** (`src/` files) – entry point and RLBot client.
 4. **Supporting assets** – collision meshes, LibTorch binaries, configuration scripts, and utility tools.
 
+### Key Architectural Strengths
+- **Modular Design**: Clean separation of concerns with public/private interface pattern
+- **Performance Focus**: CUDA acceleration, memory optimization, multi-threading support
+- **Multi-Language Integration**: Seamless C++/Python bridge for metrics and visualization
+- **Production Ready**: Sophisticated RLBot integration with real-time inference
+- **Extensibility**: Plugin-based architecture for custom environments and reward functions
+
+### Technical Highlights
+- **Advanced PPO Implementation**: GAE, clipped policy updates, experience buffers
+- **Bullet Physics Integration**: High-performance collision detection and response
+- **Socket-Based Communication**: Efficient inter-process communication protocol
+- **Version Management**: Sophisticated model versioning and compatibility checking
+- **Cross-Platform Support**: Windows/Linux compatibility with platform-specific optimizations
+
 All components are orchestrated via CMake, with a preset that builds a **RelWithDebInfo** Ninja configuration, links against **LibTorch**, and enables **CUDA** support on Windows.
 
 ---
 
-# Additional Detailed Files
-
-## GigaLearnCPP Core Sources (continued)
-
-### Framework.h (`GigaLearnCPP/src/public/GigaLearnCPP/Framework.h`)
-- **Purpose:** Defines abstract interfaces and base classes used throughout the learning engine, such as `IEnvironment`, `ITrainer`, and `IModel`. Provides virtual methods that concrete implementations (e.g., `Env`, `Trainer`) override.
-- **Key members:**
-  - `virtual void reset() = 0;`
-  - `virtual std::pair<std::vector<float>, float> step(const std::vector<float>& action) = 0;`
-  - `virtual void render() const = 0;`
-- **Impact:** Centralises the contract between components, enabling interchangeable environments or trainers for experimentation.
-
-### LearnerConfig.h (`GigaLearnCPP/src/public/GigaLearnCPP/LearnerConfig.h`)
-- **Purpose:** Holds configuration parameters for the PPO learner (learning rate, discount factor, GAE lambda, clipping epsilon, entropy coefficient, etc.).
-- **Usage:** Parsed from a JSON file at runtime; the `Learner` constructor receives a `LearnerConfig` instance.
-- **Example fields:**
-  ```json
-  {
-    "learning_rate": 3e-4,
-    "gamma": 0.99,
-    "lambda": 0.95,
-    "clip_epsilon": 0.2,
-    "entropy_scale": 0.01
-  }
-  ```
-
-### PPO Sub‑module (`GigaLearnCPP/src/public/GigaLearnCPP/PPO`)
-- **Files:** `PPO.h`, `PPO.cpp`
-- **Purpose:** Implements the core PPO algorithm – calculation of policy loss with clipping, value loss, and entropy bonus. Encapsulated in a class `PPO` used by `Learner`.
-- **Important functions:**
-  - `compute_policy_loss(const Tensor& logits, const Tensor& actions, const Tensor& advantages)`
-  - `compute_value_loss(const Tensor& values, const Tensor& returns)`
-  - `update(const Batch& batch)` – orchestrates a full optimisation step.
-- **Interaction:** Called by `Learner::train_step`; receives tensors prepared by the `Trainer`.
-
-### SkillTrackerConfig.h (`GigaLearnCPP/src/public/GigaLearnCPP/SkillTrackerConfig.h`)
-- **Purpose:** Configuration for the optional skill‑tracking subsystem that monitors the bot’s performance over time (e.g., win‑rate, average reward, skill rating).
-- **Fields:** `track_interval`, `output_path`, `metrics_to_track`.
-- **Usage:** When enabled, the `Trainer` periodically writes a JSON snapshot used for external analysis.
-
-### Util Directory (`GigaLearnCPP/src/public/GigaLearnCPP/Util`)
-Contains a collection of helper utilities that are used across the engine.
-| File | Size (bytes) | Description |
-|------|--------------|-------------|
-| `MathUtil.h` | – | Inline math helpers (vector norms, angle conversions). |
-| `Random.h` | – | Wrapper around `std::mt19937` providing uniform and normal distributions. |
-| `Timer.h` | – | Simple high‑resolution timer class for profiling code sections. |
-| `FileIO.h` | – | Functions for reading/writing binary files, used by `Checkpoint`. |
-| `Logger.h` | – | Thin façade that forwards to the global `Logger` instance. |
-| `StringUtil.h` | – | String manipulation utilities (split, trim). |
-| `ConfigParser.h` | – | Parses JSON/YAML configuration files into C++ structs. |
-| `Profiler.h` | – | Optional CPU/GPU profiling hooks that can be enabled in debug builds. |
-
-### Private Source Files (`GigaLearnCPP/src/private`)
-These files implement the concrete classes declared in the public headers.
-| File | Size (bytes) | Role |
-|------|--------------|------|
-| `EnvInternal.cpp` | – | Implements the `Env` class logic, interfacing with `RocketSim`. |
-| `LearnerInternal.cpp` | – | Contains the heavy‑weight tensor operations for the PPO learner. |
-| `TrainerInternal.cpp` | – | Manages the rollout collection, replay buffer, and calls to `PPO`. |
-| `RewardInternal.cpp` | – | Concrete reward functors referenced by `Reward.h`. |
-| `MetricsInternal.cpp` | – | Writes metric CSV files and optional TensorBoard events. |
-| `CheckpointInternal.cpp` | – | Handles the custom binary checkpoint format. |
-| `Util/MathUtil.cpp` | – | Definitions for the inline functions declared in `MathUtil.h`. |
-| `Util/Random.cpp` | – | Seed handling and distribution wrappers. |
-| `Util/Timer.cpp` | – | Implementation of the high‑resolution timer. |
-| `Util/ConfigParser.cpp` | – | JSON parsing using the lightweight `json.hpp`. |
-
-These additional files complete the picture of how the learning engine is structured and how each component interacts with the others to train the RL bot.
-
-## Additional Undocumented Files
-
-### RLBotCPP Source Files
-- **bot.cc** – Manages the lifecycle of a single bot instance (creation, destruction, state updates).
-- **botmanager.cc** – Coordinates multiple bots, handles matchmaking and team assignments.
-- **botprocess.cc** – Runs each bot's logic in a separate process/thread, enabling parallel execution.
-- **interface.cc** – Exposes the C++ API to the RLBot Python layer; translates between RLBot messages and internal structures.
-- **matchsettings.cc** – Parses match configuration (team size, game mode, boost settings) from `rlbot.cfg`.
-- **platform_windows.cc** / **platform_linux.cc** – OS‑specific utilities (file paths, high‑resolution timers, DLL handling).
-- **renderer.cc**, **namedrenderer.cc**, **scopedrenderer.cc** – Rendering helpers used for visual debugging and for sending render data to the RLBot visualiser.
-- **server.cc** – Implements the RLBot server that listens for connections from the Python client.
-- **sockets_windows.cc** / **sockets_linux.cc** – Socket abstraction per operating system.
-- **statesetting.cc** – Utilities to set car state (position, velocity, rotation) directly in the simulation.
-- **color.cc** – Defines colour constants and helper functions for rendering.
-
-### RLBotCPP Public Headers (`inc/rlbot`)
-- **rlbot.h** – Main public header; declares the RLBot API functions used by the C++ client.
-- **rlbot_state.h** – Structures representing car, ball, and boost states.
-- **rlbot_game.h** – Game‑level information such as scores, time remaining, and game mode.
-
-### rlbot Configuration Files
-- **CppPythonAgent.cfg** – Configuration for the C++/Python bridge agent (paths, timeouts).
-- **CppPythonAgent.py** – Python side of the bridge; loads the compiled C++ shared library and forwards messages.
-- **appearance.cfg** – Visual appearance settings for the bot (colour, mesh visibility).
-- **port.cfg** – Network port configuration for the RLBot server.
-- **rlbot.cfg** – Main RLBot configuration file (team assignments, match options, boost settings).
-- **RefreshEnv.cmd** – Batch script that refreshes environment variables (PATH, PYTHONPATH) before launching the bot.
-- **requirements.txt** – List of required Python packages for the RLBot Python side.
-- **README.md** – Documentation describing how to set up and run the RLBot integration.
-
-### Tools
-- **checkpoint_converter.py** – Utility script that converts training checkpoints between TorchScript (`.pt`) and the project's custom binary format, handling version compatibility.
-
-### GigaLearnCPP `src/public/GigaLearnCPP/Util` Files
-- **AvgTracker.h** – Helper class for tracking moving averages of scalar metrics.
-- **InferUnit.h / InferUnit.cpp** – Wrapper around a LibTorch model that handles inference, input preprocessing, and output post‑processing.
-- **KeyPressDetector.h / KeyPressDetector.cpp** – Detects key‑press events (useful for pausing or stepping through training manually).
-- **MetricSender.h / MetricSender.cpp** – Sends collected metrics to external services or log files.
-- **ModelConfig.h** – Defines configuration structures for model architecture (layer sizes, activation functions).
-- **RenderSender.h / RenderSender.cpp** – Sends rendering commands (lines, shapes) to the RLBot visualiser.
-- **Report.h / Report.cpp** – Generates human‑readable training reports (summary tables, plots).
-- **Timer.h** – High‑resolution timer utility used for profiling code sections.
-- **Utils.h / Utils.cpp** – Miscellaneous helper functions (string utilities, file I/O, random number generation).
-
-### GigaLearnCPP `src/private` Files (core implementations)
-- **EnvInternal.cpp** – Concrete implementation of the `Env` class; interfaces with `RocketSim` and applies actions.
-- **LearnerInternal.cpp** – Contains the heavy‑weight tensor operations for the PPO learner, including forward passes and gradient computation.
-- **TrainerInternal.cpp** – Manages rollout collection, replay buffer handling, and invokes the PPO update.
-- **RewardInternal.cpp** – Implements the concrete reward functors referenced by `Reward.h` (goal, boost, speed, distance).
-- **MetricsInternal.cpp** – Writes metric CSV files and optional TensorBoard event files.
-- **CheckpointInternal.cpp** – Handles saving and loading of the custom binary checkpoint format used for fast Windows loading.
-
-*Generated automatically by Antigravity AI assistant.*
-
-*Generated automatically by Antigravity AI assistant.*
+*Enhanced documentation generated with comprehensive project analysis*
+*Last updated: November 2024*
