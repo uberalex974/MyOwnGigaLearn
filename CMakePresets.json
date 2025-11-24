@@ -1,0 +1,22 @@
+﻿{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "x64-relwithdebinfo",
+      "displayName": "x64 RelWithDebInfo",
+      "description": "x64 RelWithDebInfo preset using Ninja, allowing unsupported compiler, with libtorch detection and CUDA support.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_ALLOW_UNSUPPORTED_COMPILER": "ON",
+        "CMAKE_PREFIX_PATH": "C:/Giga/GigaLearnCPP/libtorch",
+        "CMAKE_LIBRARY_PATH": "C:/Giga/GigaLearnCPP/libtorch/lib",
+        "CMAKE_CUDA_COMPILER": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0/bin/nvcc.exe",
+        "CMAKE_CUDA_HOST_COMPILER": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/cl.exe",
+        "CMAKE_CUDA_FLAGS": "-allow-unsupported-compiler"
+      }
+    }
+  ]
+}
