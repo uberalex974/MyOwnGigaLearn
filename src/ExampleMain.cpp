@@ -9,34 +9,62 @@
 #include <RLGymCPP/StateSetters/KickoffState.h>
 #include <RLGymCPP/StateSetters/RandomState.h>
 #include <RLGymCPP/ActionParsers/DefaultAction.h>
+#include <RLGymCPP/Rewards/AdvancedRewards.h>
 
 using namespace GGL; // GigaLearn
 using namespace RLGC; // RLGymCPP
 
 // Create the RLGymCPP environment for each of our games
 EnvCreateResult EnvCreateFunc(int index) {
-	// These are ok rewards that will produce a scoring bot in ~100m steps
+	// THE COMMUNITY ENHANCED ULTIMATE WINNER SET
+	// Designed for Purposeful Aggression, Maximum Efficiency, and Advanced Mechanics
 	std::vector<WeightedReward> rewards = {
 
-		// Movement
-		{ new AirReward(), 0.25f },
+		// --- WINNING IS EVERYTHING (DOMINANT SIGNAL) ---
+		{ new GoalReward(-1.0f), 2000.0f }, 
 
-		// Player-ball
-		{ new FaceBallReward(), 0.25f },
-		{ new VelocityPlayerToBallReward(), 4.f },
-		{ new StrongTouchReward(20, 100), 60 },
+		// --- GAME IMPACT EVENTS ---
+		{ new ShotReward(), 300.0f }, 
+		{ new SaveReward(), 300.0f },
 
-		// Ball-goal
-		{ new ZeroSumReward(new VelocityBallToGoalReward(), 1), 2.0f },
+		// --- ADVANCED MECHANICS (EVENTS) ---
+		// High value for completing difficult mechanics that lead to goals.
+		{ new MawkzyFlickReward(), 100.0f }, // Powerful flicks
+		{ new DoubleTapReward(), 150.0f },   // Wall reads
+		{ new FlipResetRewardGiga(), 100.0f }, // Flip resets
 
-		// Boost
-		{ new PickupBoostReward(), 10.f },
-		{ new SaveBoostReward(), 0.2f },
+		// --- 2v2 COORDINATION ---
+		// Teaches proper kickoff roles.
+		{ new KickoffProximityReward2v2(), 10.0f },
 
-		// Game events
-		{ new ZeroSumReward(new BumpReward(), 0.5f), 20 },
-		{ new ZeroSumReward(new DemoReward(), 0.5f), 80 },
-		{ new GoalReward(), 150 }
+		// --- OFFENSIVE PRESSURE (ZERO-SUM) ---
+		{ new ZeroSumReward(new VelocityBallToGoalReward(), 1.0f, 1.0f), 5.0f }, 
+
+		// --- POSSESSION & SPEED (ZERO-SUM) ---
+		{ new ZeroSumReward(new TouchBallReward(), 1.0f, 1.0f), 0.5f }, 
+		{ new ZeroSumReward(new TouchAccelReward(), 1.0f, 1.0f), 15.0f }, 
+
+		// --- CONTINUOUS SHAPING (LOW WEIGHT) ---
+		// Guidance for advanced playstyles.
+		{ new ContinuousFlipResetReward(), 1.0f },
+		{ new AirdribbleRewardV1(), 0.5f }, // Air dribble control
+		{ new KaiyoEnergyReward(), 0.1f }, // Energy/positioning management
+
+		// --- FUNDAMENTALS ---
+		{ new VelocityPlayerToBallReward(), 1.0f }, 
+		{ new FaceBallReward(), 0.1f },
+		
+		// --- MECHANICS SUPPORT ---
+		{ new WavedashReward(), 5.0f }, 
+		{ new AirReward(), 1.0f }, 
+
+		// --- CALCULATED AGGRESSION (SPITEFUL) ---
+		{ new ZeroSumReward(new DemoReward(), 0.5f, 1.0f), 50.0f }, 
+		{ new ZeroSumReward(new BumpReward(), 0.5f, 1.0f), 10.0f },
+
+		// --- RESOURCE STARVATION (ZERO-SUM) ---
+		{ new ZeroSumReward(new PickupBoostReward(), 1.0f, 1.0f), 5.0f }, 
+		{ new SaveBoostReward(), 1.0f },
 	};
 
 	std::vector<TerminalCondition*> terminalConditions = {
@@ -45,7 +73,7 @@ EnvCreateResult EnvCreateFunc(int index) {
 	};
 
 	// Make the arena
-	int playersPerTeam = 1;
+	int playersPerTeam = 2; // 2v2 Mode
 	auto arena = Arena::Create(GameMode::SOCCAR);
 	for (int i = 0; i < playersPerTeam; i++) {
 		arena->AddCar(Team::BLUE);
@@ -131,6 +159,11 @@ int main(int argc, char* argv[]) {
 	// Rate of reward decay
 	// Starting low tends to work out
 	cfg.ppo.gaeGamma = 0.99;
+	
+	// Increase reward clipping to prevent saturation with high scoring rewards
+	// Set to 5000.0 to ensure the massive GoalReward (2000.0) is NEVER clipped relative to other rewards.
+	// We want the network to see the full magnitude of the goal.
+	cfg.ppo.rewardClipRange = 5000.0f;
 
 	// Optimized learning rates for mixed precision
 	cfg.ppo.policyLR = 2.0e-4;     // Higher for mixed precision
