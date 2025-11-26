@@ -173,34 +173,35 @@ void GGL::PPOLearner::Learn(ExperienceBuffer& experience, Report& report, bool i
 		}
 
 		for (auto& batch : batches) {
-			auto batchActs = batch.actions;
-			auto batchOldProbs = batch.logProbs;
-			auto batchObs = batch.states;
-			auto batchActionMasks = batch.actionMasks;
-			auto batchTargetValues = batch.targetValues;
-			auto batchAdvantages = batch.advantages;
+			// Move once per batch to target device; narrow() views are taken per mini-batch to avoid repeated copies.
+			auto moveIfNeeded = [&](const torch::Tensor& t) {
+				if (!t.defined() || t.device() == device)
+					return t;
+				return t.to(device, /*non_blocking=*/true, /*copy=*/true);
+			};
+
+			auto batchActs = moveIfNeeded(batch.actions);
+			auto batchOldProbs = moveIfNeeded(batch.logProbs);
+			auto batchObs = moveIfNeeded(batch.states);
+			auto batchActionMasks = moveIfNeeded(batch.actionMasks);
+			auto batchTargetValues = moveIfNeeded(batch.targetValues);
+			auto batchAdvantages = moveIfNeeded(batch.advantages);
 
 			auto fnRunMinibatch = [&](int start, int stop) {
 
 				float batchSizeRatio = (stop - start) / (float)config.batchSize;
 
-				auto sliceToDevice = [&](const torch::Tensor& t) {
-					if (!t.defined())
-						return t;
-					auto sliced = t.slice(0, start, stop);
-					if (sliced.device() == device)
-						return sliced;
-					return sliced.to(device, true, true);
+				// Use narrow views to avoid extra allocations/copies during mini-batching.
+				auto narrowView = [&](const torch::Tensor& t) {
+					return t.defined() ? t.narrow(0, start, stop - start) : t;
 				};
 
-				// Send everything to the device and enforce correct shapes
-				auto acts = sliceToDevice(batchActs);
-				auto obs = sliceToDevice(batchObs);
-				auto actionMasks = sliceToDevice(batchActionMasks);
-				
-				auto advantages = sliceToDevice(batchAdvantages);
-				auto oldProbs = sliceToDevice(batchOldProbs);
-				auto targetValues = sliceToDevice(batchTargetValues);
+				auto acts = narrowView(batchActs);
+				auto obs = narrowView(batchObs);
+				auto actionMasks = narrowView(batchActionMasks);
+				auto advantages = narrowView(batchAdvantages);
+				auto oldProbs = narrowView(batchOldProbs);
+				auto targetValues = narrowView(batchTargetValues);
 
 				torch::Tensor probs, logProbs, entropy, ratio, clipped, policyLoss, ppoLoss;
 				if (trainPolicy) {

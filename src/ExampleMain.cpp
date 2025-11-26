@@ -208,7 +208,7 @@ int main(int argc, char* argv[]) {
 	cfg.actionDelay = cfg.tickSkip - 1; // Normal value in other RLGym frameworks
 
 	// Play around with this to see what the optimal is for your machine, more games will consume more RAM
-	cfg.numGames = 512;  // Training environment count
+	cfg.numGames = 1024;  // Training environment count
 
 	// === CHECKPOINT MANAGEMENT (MINIMAL OVERHEAD) ===
 	// Synchronized with tsPerVersion, minimal I/O interruption
