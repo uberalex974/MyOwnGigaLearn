@@ -1,0 +1,30 @@
+# V2 OPTIMIZATIONS IMPLEMENTATION PLAN
+
+## Verification rapide actuelle
+
+Optimizations confirmées dans le code:
+✅ Orthogonal Init (Models.cpp:36)
+✅ GPU Pre-load (PPOLearner.cpp:171)  
+✅ Mixed Precision (ExampleMain.cpp:174)
+
+Maintenant implémentons les 3 V2:
+
+## 1. MULTI-TENSOR OPTIMIZER (+200%)
+Priorité: HAUTE - Plus facile, gros impact
+File: PPOLearner.cpp 
+Effort: 2-3h
+Gain: 12 kernels → 1 kernel
+
+## 2. PARALLEL GAE (+667%)
+Priorité: HAUTE - Impact énorme
+File: GAE.cpp
+Effort: 4-5h (complexe avec truncations)
+Gain: O(N) → O(log N)
+
+## 3. ASYNC ROLLOUT (+150%)
+Priorité: MOYENNE - Threading complexe  
+File: Learner.cpp
+Effort: 1 jour
+Gain: Pipeline collection/compute
+
+Commençons par Multi-Tensor Optimizer (plus facile)!

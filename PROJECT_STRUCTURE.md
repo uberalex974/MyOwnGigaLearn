@@ -39,6 +39,23 @@ The **GigaLearnCPP** project is a sophisticated C++ machine learning framework s
 - **RLBot Integration**: Production-ready bot deployment through socket-based communication
 
 ### 🚀 Latest Optimizations (November 2024)
+
+### 🚀 Real Optimizations (Verified Active - Nov 2024)
+- **System-Level**:
+    - **Async Metrics**: `MetricSender` runs in a background thread (No "Python Pause").
+    - **Parallel Obs Norm**: Observation normalization uses OpenMP + Direct Pointer Access.
+    - **Fast Math**: `/fp:fast` enabled for SIMD vectorization.
+    - **Memcpy**: Instant CPU-side tensor data transfer.
+    - **OpenMP**: Multi-threaded environment stepping and GAE.
+    - **Pinned Memory**: Faster CPU->GPU transfers.
+- **Algorithm-Level**:
+    - **Cosine Annealing**: Learning rate decays from 3e-4 to 1e-6 (S-Curve).
+    - **Gradient Accumulation**: Simulates large batches on small VRAM.
+    - **Progressive Batching**: Batch size grows with training.
+    - **Advantage Normalization**: Per-batch `(adv - mean) / std`.
+    - **Value Clipping**: `0.2` (Standard PPO).
+    - **Reward Clipping**: **1000.0** (Preserves Goal Signals).
+
 - **3-5x Performance Improvement**: Through comprehensive single-GPU optimization
 - **50% VRAM Reduction**: Mixed precision training implementation
 - **Advanced Memory Management**: GPU memory pooling and garbage collection

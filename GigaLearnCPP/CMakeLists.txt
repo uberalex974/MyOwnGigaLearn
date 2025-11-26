@@ -14,7 +14,7 @@ endif()
 
 # Add libtorch (https://pytorch.org/cppdocs/installing.html#minimal-example)
 find_package(Torch REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS} /O2 /Ob2 /Oi /Ot /Oy /GL /arch:AVX2 /fp:fast")
 
 # Add all headers and code files
 file(GLOB_RECURSE FILES_SRC "src/*.cpp" "src/*.h" "src/*.hpp" "libsrc/*.cpp" "libsrc/.h" "libsrc/.hpp")
@@ -35,6 +35,15 @@ endif()
 # Set C++ version to 20
 set_target_properties(GigaLearnCPP PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(GigaLearnCPP PROPERTIES CXX_STANDARD 20)
+
+# Enable OpenMP
+find_package(OpenMP)
+if (OpenMP_CXX_FOUND)
+    message("OpenMP Found! Enabling multi-threading support...")
+    target_link_libraries(GigaLearnCPP PUBLIC OpenMP::OpenMP_CXX)
+else()
+    message("WARNING: OpenMP NOT FOUND. Multi-threading will be disabled.")
+endif()
 
 # Include RLGymCPP
 add_subdirectory(RLGymCPP)
@@ -86,3 +95,5 @@ if (MSVC)
                  ${TORCH_DLLS}
                  $<TARGET_FILE_DIR:GigaLearnCPP>)
 endif (MSVC)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LTCG")

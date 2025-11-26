@@ -550,109 +550,65 @@ float GetReward(const Player& player, const GameState& state, bool isFinal) {
 
 ---
 
-### 6. KickoffProximityReward2v2
+### CurriculumReward (Wrapper)
 
-**Purpose**: Teaches proper 2v2 kickoff role assignment (goer vs. cheater).
-
-#### Technical Specification
+**Purpose**: Introduces rewards only after a certain number of training steps to ensure fundamentals are learned first.
 
 **Class Declaration**:
 ```cpp
-class KickoffProximityReward2v2 : public Reward {
-private:
-    enum class PlayerRole { GOER, CHEATER };
-    
-    bool IsKickoffActive(const GameState& state);
-    PlayerRole DeterminePlayerRole(const Player& player, const Player* teammate, const GameState& state);
-    
+class CurriculumReward : public Reward {
 public:
-    float goerReward = 1.0f;
-    float cheaterReward = 0.5f;
-    
+    CurriculumReward(Reward* child, uint64_t minSteps, bool ownsChild = true);
     virtual float GetReward(const Player& player, const GameState& state, bool isFinal) override;
 };
 ```
 
-**Kickoff Detection**:
+**Implementation**:
 ```cpp
-bool IsKickoffActive(const GameState& state) {
-    float ballSpeed = state.ball.vel.Length();
-    float ballHeight = state.ball.pos.z;
-    Vec ballPos2D(state.ball.pos.x, state.ball.pos.y, 0.f);
-    
-    return (ballSpeed < 2.f &&           // Ball stationary
-            ballHeight < 150.f &&        // Ball on ground
-            ballPos2D.Length() < 50.f);  // Ball at center
+float GetReward(...) {
+    if (AdvancedRewardGlobals::TotalSteps < _minSteps) return 0.0f;
+    return _child->GetReward(player, state, isFinal);
 }
 ```
+
+**Usage**:
+```cpp
+{ new CurriculumReward(new MawkzyFlickReward(), 500000000), 100.0f } // Active after 500M steps
+```
+
+---
+
+### 6. KickoffProximityReward2v2
+
+**Purpose**: Teaches proper 2v2 kickoff role assignment (goer vs. cheater) without encouraging stalling.
+
+**Technical Specification**:
 
 **Role Assignment**:
+- **Goer**: Closer to ball.
+- **Cheater**: Farther from ball.
+
+**Reward Calculation (UPDATED)**:
 ```cpp
-PlayerRole DeterminePlayerRole(const Player& player, const Player* teammate, const GameState& state) {
-    float playerDistToBall = (player.pos - state.ball.pos).Length();
-    float teammateDistToBall = (teammate->pos - state.ball.pos).Length();
-    
-    return (playerDistToBall < teammateDistToBall) ? 
-           PlayerRole::GOER : PlayerRole::CHEATER;
+if (role == PlayerRole::GOER) {
+    // Goer: Rewarded for VELOCITY towards ball
+    // This prevents "stalling" where bots just sit near the ball to farm distance reward
+    Vec dirToBall = (state.ball.pos - player.pos).Normalized();
+    float velTowardsBall = player.vel.Dot(dirToBall);
+    float normVel = velTowardsBall / CommonValues::CAR_MAX_SPEED;
+    return CLAMP(normVel, 0.f, 1.f) * goerReward;
+} else {
+    // Cheater: Rewarded for staying back near goal
+    float distToGoal = ...;
+    return (1.f - CLAMP(distToGoal / 5500.f, 0.f, 1.f)) * cheaterReward;
 }
 ```
 
-**Reward Calculation**:
-```cpp
-float GetReward(const Player& player, const GameState& state, bool isFinal) {
-    if (!IsKickoffActive(state)) return 0.f;
-    
-    // Find teammate
-    const Player* teammate = nullptr;
-    for (const auto& p : state.players) {
-        if (p.team == player.team && p.carId != player.carId) {
-            teammate = &p;
-            break;
-        }
-    }
-    if (!teammate) return 0.f;
-    
-    // Assign role
-    PlayerRole role = DeterminePlayerRole(player, teammate, state);
-    float playerDistToBall = (player.pos - state.ball.pos).Length();
-    
-    if (role == PlayerRole::GOER) {
-        // Goer: Rewarded for approaching ball quickly
-        return (1.f - CLAMP(playerDistToBall / 3500.f, 0.f, 1.f)) * goerReward;
-    } else {
-        // Cheater: Rewarded for staying back near goal
-        float distToGoal = (player.team == Team::BLUE) ?
-                          (player.pos - CommonValues::BLUE_GOAL_BACK).Length() :
-                          (player.pos - CommonValues::ORANGE_GOAL_BACK).Length();
-        
-        return (1.f - CLAMP(distToGoal / 5500.f, 0.f, 1.f)) * cheaterReward;
-    }
-}
-```
+**Why the Change?**:
+- Previous distance-based reward encouraged bots to stop *just before* touching the ball to maximize proximity without ending the kickoff.
+- Velocity-based reward forces them to **move** towards the ball. If they stop, reward drops to 0.
 
-**Role Responsibilities**:
-- **Goer**: Go for kickoff, rewarded for getting close (distance to ball)
-- **Cheater**: Stay back, rewarded for defensive position (distance to goal)
-
-**Tunable Parameters**:
-- **goerReward**: Maximum reward for goer (default: 1.0)
-- **cheaterReward**: Maximum reward for cheater (default: 0.5)
-- **3500**: Goer distance normalization (full field diagonal)
-- **5500**: Cheater distance normalization (goal to opposite corner)
-
-**Recommended Weights**:
-- Standard: 5.0-10.0 (subtle guidance during kicks)
-- High: 15.0-20.0 (if kickoffs are critical)
-
-**Design Philosophy**:
-- **Dynamic Role Assignment**: Closer player automatically becomes goer
-- **Continuous Reward**: Active every step during kickoff (not just at touch)
-- **Lower Cheater Reward**: Going for kickoff is slightly preferred over staying back
-
-#### Performance Characteristics
-- **Time Complexity**: O(n) where n = number of players (teammate search)
-- **Space Complexity**: O(1) (stateless)
-- **Real-time Cost**: ~100-150 nanoseconds per call
+**Recommended Weight**: 5.0 (Reduced from 10.0 due to velocity scaling nature)
 
 ---
 

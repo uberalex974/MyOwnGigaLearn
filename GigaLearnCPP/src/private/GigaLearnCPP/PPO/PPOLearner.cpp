@@ -166,6 +166,11 @@ void GGL::PPOLearner::Learn(ExperienceBuffer& experience, Report& report, bool i
 
 		// Get randomly-ordered timesteps for PPO
 		auto batches = experience.GetAllBatchesShuffled(config.batchSize, config.overbatching);
+		static bool loggedDevice = false;
+		if (!loggedDevice && !batches.empty()) {
+			RG_LOG("DEBUG: Experience batch state device: " << batches[0].states.device() << ", indices device: " << batches[0].actions.device());
+			loggedDevice = true;
+		}
 
 		for (auto& batch : batches) {
 			auto batchActs = batch.actions;
@@ -179,14 +184,23 @@ void GGL::PPOLearner::Learn(ExperienceBuffer& experience, Report& report, bool i
 
 				float batchSizeRatio = (stop - start) / (float)config.batchSize;
 
+				auto sliceToDevice = [&](const torch::Tensor& t) {
+					if (!t.defined())
+						return t;
+					auto sliced = t.slice(0, start, stop);
+					if (sliced.device() == device)
+						return sliced;
+					return sliced.to(device, true, true);
+				};
+
 				// Send everything to the device and enforce correct shapes
-				auto acts = batchActs.slice(0, start, stop).to(device, true, true);
-				auto obs = batchObs.slice(0, start, stop).to(device, true, true);
-				auto actionMasks = batchActionMasks.slice(0, start, stop).to(device, true, true);
+				auto acts = sliceToDevice(batchActs);
+				auto obs = sliceToDevice(batchObs);
+				auto actionMasks = sliceToDevice(batchActionMasks);
 				
-				auto advantages = batchAdvantages.slice(0, start, stop).to(device, true, true);
-				auto oldProbs = batchOldProbs.slice(0, start, stop).to(device, true, true);
-				auto targetValues = batchTargetValues.slice(0, start, stop).to(device, true, true);
+				auto advantages = sliceToDevice(batchAdvantages);
+				auto oldProbs = sliceToDevice(batchOldProbs);
+				auto targetValues = sliceToDevice(batchTargetValues);
 
 				torch::Tensor probs, logProbs, entropy, ratio, clipped, policyLoss, ppoLoss;
 				if (trainPolicy) {
@@ -271,24 +285,11 @@ void GGL::PPOLearner::Learn(ExperienceBuffer& experience, Report& report, bool i
 			};
 
 			
-			if (device.is_cpu()) {
-				// Just run one minibatch
-				fnRunMinibatch(0, config.batchSize);
-			} else {
-				// 🔥 OPTIMIZED: Parallel mini-batch processing for 2-4x speed improvement
-				#ifdef _OPENMP
-				#pragma omp parallel for schedule(dynamic) if(device.is_cuda())
-				#endif
-				for (int mbs = 0; mbs < config.batchSize; mbs += config.miniBatchSize) {
-					int start = mbs;
-					int stop = start + config.miniBatchSize;
-					fnRunMinibatch(start, stop);
-					
-					// 🔥 OPTIMIZED: Synchronize gradients every 4 mini-batches
-					if (mbs > 0 && (mbs / config.miniBatchSize) % 4 == 0) {
-						models.StepOptims();
-					}
-				}
+			// Run minibatches sequentially to keep CUDA ops and optimizer updates coherent.
+			for (int mbs = 0; mbs < config.batchSize; mbs += config.miniBatchSize) {
+				int start = mbs;
+				int stop = start + config.miniBatchSize;
+				fnRunMinibatch(start, stop);
 			}
 
 			if (trainPolicy)
@@ -408,7 +409,13 @@ void GGL::PPOLearner::SetLearningRates(float policyLR, float criticLR) {
 	if (models["shared_head"])
 		models["shared_head"]->SetOptimLR(RS_MIN(policyLR, criticLR));
 
-	RG_LOG("PPOLearner: " << RS_STR(std::scientific << "Set learning rate to [" << policyLR << ", " << criticLR << "]"));
+	// Avoid spamming logs when LR is updated every step by the callback.
+	static float lastPolicy = -1.f, lastCritic = -1.f;
+	if (policyLR != lastPolicy || criticLR != lastCritic) {
+		RG_LOG("PPOLearner: " << RS_STR(std::scientific << "Set learning rate to [" << policyLR << ", " << criticLR << "]"));
+		lastPolicy = policyLR;
+		lastCritic = criticLR;
+	}
 }
 
 GGL::ModelSet GGL::PPOLearner::GetPolicyModels() {
@@ -421,3 +428,4 @@ GGL::ModelSet GGL::PPOLearner::GetPolicyModels() {
 	}
 	return result;
 }
+

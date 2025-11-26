@@ -6,6 +6,7 @@
 #include <torch/cuda.h>
 #include <nlohmann/json.hpp>
 #include <pybind11/embed.h>
+#include <cmath>
 
 #ifdef RG_CUDA_SUPPORT
 #include <c10/cuda/CUDACachingAllocator.h>
@@ -475,7 +476,7 @@ void GGL::Learner::Start() {
 		std::thread keyPressThread;
 		StartQuitKeyThread(saveQueued, keyPressThread);
 
-		ExperienceBuffer experience = ExperienceBuffer(config.randomSeed, torch::kCPU);
+		ExperienceBuffer experience = ExperienceBuffer(config.randomSeed, ppo->device);
 
 		int numPlayers = envSet->state.numPlayers;
 
@@ -577,9 +578,31 @@ void GGL::Learner::Start() {
 						envSet->Reset();
 						envStepTime += stepTimer.Elapsed();
 
-						for (float f : envSet->state.obs.data)
-							if (isnan(f) || isinf(f))
-								RG_ERR_CLOSE("Obs builder produced a NaN/inf value");
+						int badObsCount = 0;
+						for (float& f : envSet->state.obs.data) {
+							if (!std::isfinite(f)) {
+								f = 0;
+								badObsCount++;
+							}
+						}
+						if (badObsCount)
+							report["Sanitized Obs"] = (float)badObsCount;
+
+						// Ensure action masks always have at least one valid action to prevent NaNs in policy logits.
+						for (int i = 0; i < envSet->state.numPlayers; i++) {
+							bool anyValid = false;
+							for (int j = 0; j < numActions; j++) {
+								uint8_t& maskVal = envSet->state.actionMasks.At(i, j);
+								if (maskVal)
+									anyValid = true;
+							}
+							if (!anyValid) {
+								// Fallback: enable all actions if mask was empty
+								for (int j = 0; j < numActions; j++)
+									envSet->state.actionMasks.At(i, j) = 1;
+								report["Sanitized Masks"] = report["Sanitized Masks"] + 1;
+							}
+						}
 
 						if (!render && obsStat) {
 							// TODO: This samples from old versions too
@@ -738,11 +761,22 @@ void GGL::Learner::Start() {
 					torch::Tensor tLogProbs = torch::tensor(combinedTraj.logProbs);
 					torch::Tensor tRewards = torch::tensor(combinedTraj.rewards);
 					torch::Tensor tTerminals = torch::tensor(combinedTraj.terminals);
+					// Keep a CPU copy for lightweight scalar metrics; move working copies to learner device once
+					torch::Tensor tTerminalsCPU = tTerminals;
+					torch::Tensor tdStates = tStates.to(ppo->device, true).nan_to_num(0, 0, 0);
+					torch::Tensor tdActionMasks = tActionMasks.to(ppo->device, true);
+					torch::Tensor tdActions = tActions.to(ppo->device, true);
+					torch::Tensor tdLogProbs = tLogProbs.to(ppo->device, true);
+					torch::Tensor tdRewards = tRewards.to(ppo->device, true).nan_to_num(0, 0, 0);
+					torch::Tensor tdTerminals = tTerminals.to(ppo->device, true);
 
 					// States we truncated at (there could be none)
 					torch::Tensor tNextTruncStates;
-					if (!combinedTraj.nextStates.empty())
+					torch::Tensor tdNextTruncStates;
+					if (!combinedTraj.nextStates.empty()) {
 						tNextTruncStates = torch::tensor(combinedTraj.nextStates).reshape({ -1, obsSize });
+						tdNextTruncStates = tNextTruncStates.to(ppo->device, true);
+					}
 
 					report["Average Step Reward"] = tRewards.mean().item<float>();
 					report["Collected Timesteps"] = stepsCollected;
@@ -752,18 +786,22 @@ void GGL::Learner::Start() {
 
 					if (ppo->device.is_cpu()) {
 						// Predict values all at once
-						tValPreds = ppo->InferCritic(tStates.to(ppo->device, true, true)).cpu();
+						tValPreds = ppo->InferCritic(tdStates).cpu();
 						if (tNextTruncStates.defined())
-							tTruncValPreds = ppo->InferCritic(tNextTruncStates.to(ppo->device, true, true)).cpu();
+							tTruncValPreds = ppo->InferCritic(tdNextTruncStates).cpu();
+						// Keep device copies for GAE path
+						tValPreds = tValPreds.to(ppo->device, true);
+						if (tTruncValPreds.defined())
+							tTruncValPreds = tTruncValPreds.to(ppo->device, true);
 					} else {
 						// Predict values using minibatching
-						tValPreds = torch::zeros({ (int64_t)combinedTraj.Length() });
+						tValPreds = torch::zeros({ (int64_t)combinedTraj.Length() }, tStates.options().device(ppo->device));
 						for (int i = 0; i < combinedTraj.Length(); i += ppo->config.miniBatchSize) {
 							int start = i;
 							int end = RS_MIN(i + ppo->config.miniBatchSize, combinedTraj.Length());
-							torch::Tensor tStatesPart = tStates.slice(0, start, end);
+							torch::Tensor tStatesPart = tdStates.slice(0, start, end);
 
-							auto valPredsPart = ppo->InferCritic(tStatesPart.to(ppo->device, true, true)).cpu();
+							auto valPredsPart = ppo->InferCritic(tStatesPart);
 							RG_ASSERT(valPredsPart.size(0) == (end - start));
 							tValPreds.slice(0, start, end).copy_(valPredsPart, true);
 						}
@@ -773,21 +811,24 @@ void GGL::Learner::Start() {
 							// If this is ever actually a real problem in a legitimate use case, ping Zealan in the dead of night
 							RG_ASSERT(tNextTruncStates.size(0) <= ppo->config.miniBatchSize);
 
-							tTruncValPreds = ppo->InferCritic(tNextTruncStates.to(ppo->device, true, true)).cpu();
+							tTruncValPreds = ppo->InferCritic(tdNextTruncStates);
 						}
 					}
 
-					report["Episode Length"] = 1.f / (tTerminals == 1).to(torch::kFloat32).mean().item<float>();
+					report["Episode Length"] = 1.f / (tTerminalsCPU == 1).to(torch::kFloat32).mean().item<float>();
 
 					Timer gaeTimer = {};
 					// Run GAE
 					torch::Tensor tAdvantages, tTargetVals, tReturns;
 					float rewClipPortion;
 					GAE::Compute(
-						tRewards, tTerminals, tValPreds, tTruncValPreds,
+						tdRewards, tdTerminals, tValPreds, tTruncValPreds,
 						tAdvantages, tTargetVals, tReturns, rewClipPortion,
 						config.ppo.gaeGamma, config.ppo.gaeLambda, returnStat ? returnStat->GetSTD() : 1, config.ppo.rewardClipRange
 					);
+					tAdvantages = tAdvantages.nan_to_num(0, 0, 0);
+					tTargetVals = tTargetVals.nan_to_num(0, 0, 0);
+					tReturns = tReturns.nan_to_num(0, 0, 0);
 					report["GAE Time"] = gaeTimer.Elapsed();
 					report["Clipped Reward Portion"] = rewClipPortion;
 
@@ -796,7 +837,8 @@ void GGL::Learner::Start() {
 
 						int numToIncrement = RS_MIN(config.maxReturnSamples, tReturns.size(0));
 						if (numToIncrement > 0) {
-							auto selectedReturns = tReturns.index_select(0, torch::randint(tReturns.size(0), { (int64_t)numToIncrement }));
+							auto idxOpts = torch::TensorOptions().dtype(torch::kLong).device(tReturns.device());
+							auto selectedReturns = tReturns.index_select(0, torch::randint(tReturns.size(0), { (int64_t)numToIncrement }, idxOpts));
 							returnStat->Increment(TENSOR_TO_VEC<float>(selectedReturns));
 						}
 					}
@@ -805,12 +847,12 @@ void GGL::Learner::Start() {
 					report["GAE/Avg Val Target"] = tTargetVals.abs().mean().item<float>();
 
 					// Set experience buffer
-					experience.data.actions = tActions;
-					experience.data.logProbs = tLogProbs;
-					experience.data.actionMasks = tActionMasks;
-					experience.data.states = tStates;
-					experience.data.advantages = tAdvantages;
-					experience.data.targetValues = tTargetVals;
+					experience.data.actions = tdActions.contiguous();
+					experience.data.logProbs = tdLogProbs.contiguous();
+					experience.data.actionMasks = tdActionMasks.contiguous();
+					experience.data.states = tdStates.contiguous();
+					experience.data.advantages = tAdvantages.contiguous();
+					experience.data.targetValues = tTargetVals.contiguous();
 				}
 
 				// Free CUDA cache
@@ -900,4 +942,9 @@ GGL::Learner::~Learner() {
 	delete metricSender;
 	delete renderSender;
 	pybind11::finalize_interpreter();
+}
+
+void GGL::Learner::SetPPO_LR(float lr) {
+	if (ppo)
+		ppo->SetLearningRates(lr, lr);
 }

@@ -42,7 +42,7 @@ namespace GGL {
 		LearnerDeviceType deviceType = LearnerDeviceType::AUTO; // Auto will use your CUDA GPU if available
 
 		// Standardize the obs values (doesn't seem to help much from my testing)
-		bool standardizeObs = false;
+		bool standardizeObs = true; // Enabled for better stability
 		float minObsSTD = 1 / 10.f;
 		float maxObsMeanRange = 3;
 		int maxObsSamples = 100;

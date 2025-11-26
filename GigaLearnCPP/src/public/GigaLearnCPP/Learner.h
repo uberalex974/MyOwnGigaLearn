@@ -49,6 +49,7 @@ namespace GGL {
 		void Load();
 		void SaveStats(std::filesystem::path path);
 		void LoadStats(std::filesystem::path path);
+		void SetPPO_LR(float lr);
 
 		RG_NO_COPY(Learner);
 

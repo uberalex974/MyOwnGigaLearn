@@ -25,7 +25,9 @@ at::autocast::set_enabled(false); \
 namespace GGL {
 	template <typename T>
 	inline torch::Tensor DIMLIST2_TO_TENSOR(const RLGC::DimList2<T>& list) {
-		return torch::tensor(list.data).reshape({ (int64_t)list.size[0], (int64_t)list.size[1] });
+		// Optimization: Use from_blob to avoid copy. 
+		// CAUTION: The tensor shares memory with the vector. Ensure vector outlives tensor.
+		return torch::from_blob((void*)list.data.data(), { (int64_t)list.size[0], (int64_t)list.size[1] }, torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()));
 	}
 
 	template <typename T>

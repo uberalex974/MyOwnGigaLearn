@@ -3,6 +3,7 @@
 #include <torch/csrc/api/include/torch/serialize.h>
 #include <torch/csrc/api/include/torch/nn/utils/convert_parameters.h>
 #include <torch/nn/modules/normalization.h>
+#include <torch/nn/init.h>
 
 GGL::Model::Model(
 	const char* modelName,
@@ -31,6 +32,32 @@ GGL::Model::Model(
 	register_module("seq", seq);
 	seq->to(device);
 	optim = MakeOptimizer(config.optimType, this->parameters(), 0);
+
+	// === ORTHOGONAL INITIALIZATION (OPTIMAL FOR RL) ===
+	// Better gradient flow and faster convergence
+	{
+		torch::NoGradGuard no_grad;
+		for (auto& p : this->parameters()) {
+			if (p.dim() >= 2) {
+				// Weight matrix - use orthogonal init
+				float gain = std::sqrt(2.0f);  // Default for LeakyReLU
+				
+				// Special gains for output layers
+				if (config.addOutputLayer && p.size(0) == config.numOutputs) {
+					if (std::string(modelName) == "critic") {
+						gain = 1.0f;  // Value function
+					} else if (std::string(modelName) == "policy") {
+						gain = 0.01f;  // Policy (promotes exploration)
+					}
+				}
+				
+				torch::nn::init::orthogonal_(p, gain);
+			} else {
+				// Bias vector - zero init
+				torch::nn::init::constant_(p, 0.0f);
+			}
+		}
+	}
 }
 
 torch::Tensor GGL::Model::Forward(torch::Tensor input, bool halfPrec) {

@@ -11,6 +11,7 @@ namespace GGL {
 		int64_t tsPerItr = 50'000;
 		int64_t batchSize = 50'000;
 		int64_t miniBatchSize = 0; // Set to 0 to just use batchSize
+		int gradientAccumulationSteps = 1; // Number of mini-batches to accumulate gradients over before stepping optimizer
 
 		// On the last batch of the iteration, 
 		//	if the amount of remaining experience exceeds the batch size, 
@@ -28,7 +29,7 @@ namespace GGL {
 
 		// Use half-precision models for inference
 		// This is much faster on GPU, not so much for CPU
-		bool useHalfPrecision = false;
+		bool useHalfPrecision = true;
 
 		PartialModelConfig policy, critic, sharedHead;
 
@@ -44,13 +45,14 @@ namespace GGL {
 		bool maskEntropy = false; 
 
 		float clipRange = 0.2f;
+		float valueClipRange = 0.2f; // Clip range for value function
 		
 		// Temperature of the policy's softmax distribution
 		float policyTemperature = 1;
 
 		float gaeLambda = 0.95f;
 		float gaeGamma = 0.99f;
-		float rewardClipRange = 10; // Clip range for normalized rewards, set 0 to disable
+		float rewardClipRange = 1000.0f; // Increased to 1000 to fully preserve Goal Reward signal (300+) // Increased for safety with high rewards (goals) // Clip range for normalized rewards, set 0 to disable
 
 		bool useGuidingPolicy = false;
 		std::filesystem::path guidingPolicyPath = "guiding_policy/"; // Path of the guiding policy model(s)
@@ -58,11 +60,11 @@ namespace GGL {
 
 		PPOLearnerConfig() {
 			policy = {};
-			policy.layerSizes = { 256, 256, 256 };
+			policy.layerSizes = { 512, 256, 128 }; // Tapered for better feature extraction
 			critic = {};
-			critic.layerSizes = { 256, 256, 256 };
+			critic.layerSizes = { 512, 256, 128 }; // Tapered for better feature extraction
 			sharedHead = {};
-			sharedHead.layerSizes = { 256 };
+			sharedHead.layerSizes = { 512, 256 }; // Deeper shared head
 			sharedHead.addOutputLayer = false;
 		}
 	};

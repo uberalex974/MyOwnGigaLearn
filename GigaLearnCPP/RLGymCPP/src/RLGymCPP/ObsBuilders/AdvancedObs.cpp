@@ -43,7 +43,9 @@ RLGC::FList RLGC::AdvancedObs::BuildObs(const Player& player, const GameState& s
 		if (pads[i]) {
 			obs += 1.f; // Pad is already available
 		} else {
-			obs += 1.f / (1.f + padTimers[i]); // Approaches 1 as the pad becomes available
+			// Avoid division by zero/negative timers that could produce inf/NaN
+			float timer = std::max(padTimers[i], 0.f) + 1.f;
+			obs += 1.f / timer; // Approaches 1 as the pad becomes available
 		}
 	}
 

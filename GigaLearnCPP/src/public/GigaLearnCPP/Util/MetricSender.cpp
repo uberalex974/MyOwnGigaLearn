@@ -1,3 +1,4 @@
+#include <thread>
 #include "MetricSender.h"
 
 #include "Timer.h"
@@ -29,16 +30,24 @@ GGL::MetricSender::MetricSender(std::string _projectName, std::string _groupName
 }
 
 void GGL::MetricSender::Send(const Report& report) {
-	py::dict reportDict = {};
+	// Optimization: Async sending to prevent blocking training loop
+	// Copy report data to avoid lifetime issues in detached thread
+	Report reportCopy = report;
+	
+	std::thread([this, reportCopy]() {
+		// Acquire GIL for Python operations
+		py::gil_scoped_acquire acquire;
+		
+		py::dict reportDict = {};
+		for (auto& pair : reportCopy.data)
+			reportDict[pair.first.c_str()] = pair.second;
 
-	for (auto& pair : report.data)
-		reportDict[pair.first.c_str()] = pair.second;
-
-	try {
-		pyMod.attr("add_metrics")(reportDict);
-	} catch (std::exception& e) {
-		RG_ERR_CLOSE("MetricSender: Failed to add metrics, exception: " << e.what());
-	}
+		try {
+			pyMod.attr("add_metrics")(reportDict);
+		} catch (std::exception& e) {
+			RG_LOG("MetricSender Error: " << e.what());
+		}
+	}).detach();
 }
 
 GGL::MetricSender::~MetricSender() {

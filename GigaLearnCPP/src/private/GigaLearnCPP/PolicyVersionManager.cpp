@@ -241,14 +241,32 @@ void GGL::PolicyVersionManager::RunSkillMatches(PPOLearner* ppo, Report& report)
 		torch::Tensor tNewActions, tOldActions;
 		torch::Tensor _tLogProbs;
 
+		// Explicitly cast arguments to ensure correct overload resolution
+		bool deterministic = (bool)skill.config.deterministic;
+		float temperature = (float)ppo->config.policyTemperature;
+		bool halfPrec = (bool)ppo->config.useHalfPrecision;
+
 		PPOLearner::InferActionsFromModels(
-			ppo->models, tNewStates.to(ppo->device, true), tNewActionMasks.to(ppo->device, true), 
-			skill.config.deterministic, ppo->config.policyTemperature, ppo->config.useHalfPrecision, 
-			&tNewActions, &_tLogProbs);
+			ppo->models, 
+			tNewStates.to(ppo->device, true), 
+			tNewActionMasks.to(ppo->device, true), 
+			deterministic, 
+			temperature, 
+			halfPrec, 
+			&tNewActions, 
+			&_tLogProbs
+		);
+
 		PPOLearner::InferActionsFromModels(
-			oldVersion.models, tOldStates.to(ppo->device, true), tOldActionMasks.to(ppo->device, true), 
-			skill.config.deterministic, ppo->config.policyTemperature, ppo->config.useHalfPrecision,
-			&tOldActions, &_tLogProbs);
+			oldVersion.models, 
+			tOldStates.to(ppo->device, true), 
+			tOldActionMasks.to(ppo->device, true), 
+			deterministic, 
+			temperature, 
+			halfPrec,
+			&tOldActions, 
+			&_tLogProbs
+		);
 
 		auto newActions = TENSOR_TO_VEC<int>(tNewActions);
 		auto oldActions = TENSOR_TO_VEC<int>(tOldActions);
